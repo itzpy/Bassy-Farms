@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { db } from './db';
 
 vi.mock('./supabase', () => ({
@@ -8,7 +8,7 @@ vi.mock('./supabase', () => ({
 }));
 
 import { supabase } from './supabase';
-import { pushTable, pullTable, resetSyncCursors, syncAll, unsyncedCount } from './sync';
+import { pushTable, pullTable, resetSyncCursors, syncAll, unsyncedCount, startSyncLoop } from './sync';
 
 describe('pushTable', () => {
   beforeEach(async () => {
@@ -197,5 +197,71 @@ describe('syncAll reentrancy guard', () => {
     // Now that the (only) in-flight syncAll has finished its own traversal,
     // it should have reached and pushed the plots record itself.
     expect(plotsUpsert).toHaveBeenCalled();
+  });
+});
+
+describe('startSyncLoop', () => {
+  // Only setInterval/clearInterval are faked so real async work (IndexedDB via
+  // Dexie/fake-indexeddb, and the mocked supabase promises) keeps flowing on its
+  // own (real, unfaked) timers. A single macrotask tick isn't always enough to
+  // drain a whole syncAll() cycle (3 tables x push+pull, each round-tripping
+  // through fake-indexeddb), so wait for the call count to actually reach the
+  // expected value instead of guessing how many ticks are needed.
+  const waitForCallCount = (n: number) =>
+    vi.waitFor(
+      () => {
+        expect(supabase.from).toHaveBeenCalledTimes(n);
+      },
+      { timeout: 2000, interval: 10 }
+    );
+  const realDelay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    await db.animals.clear();
+    await db.plots.clear();
+    await db.events.clear();
+    resetSyncCursors();
+
+    // No unsynced records exist (tables were just cleared), so pushTable makes
+    // zero supabase calls per table; pullTable makes exactly one (`select().gt()`)
+    // per table. That gives a clean, predictable "3 calls == one syncAll ran".
+    (supabase.from as ReturnType<typeof vi.fn>).mockReset();
+    (supabase.from as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+      upsert: vi.fn().mockResolvedValue({ error: null }),
+      select: vi.fn().mockReturnValue({
+        gt: vi.fn().mockResolvedValue({ data: [], error: null }),
+      }),
+    }));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('fires immediately, on the online event, and on each interval tick; cleanup stops both', async () => {
+    const cleanup = startSyncLoop(1000);
+
+    // (a) triggers a sync immediately, synchronously on call.
+    await waitForCallCount(3);
+
+    // (b) triggers again on the 'online' event.
+    window.dispatchEvent(new Event('online'));
+    await waitForCallCount(6);
+
+    // (c) triggers again on each interval tick.
+    vi.advanceTimersByTime(1000);
+    await waitForCallCount(9);
+
+    vi.advanceTimersByTime(1000);
+    await waitForCallCount(12);
+
+    // (d) cleanup stops BOTH future interval ticks AND future 'online' events.
+    cleanup();
+
+    window.dispatchEvent(new Event('online'));
+    vi.advanceTimersByTime(5000);
+    await realDelay(100);
+    expect(supabase.from).toHaveBeenCalledTimes(12);
   });
 });
