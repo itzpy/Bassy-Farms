@@ -64,3 +64,41 @@ export async function pullTable(table: SyncTable): Promise<void> {
     }
   }
 }
+
+let syncAllInProgress = false;
+
+export async function syncAll(): Promise<void> {
+  if (syncAllInProgress) {
+    return;
+  }
+  syncAllInProgress = true;
+
+  try {
+    for (const table of SYNC_TABLES) {
+      await pushTable(table);
+      await pullTable(table);
+    }
+  } finally {
+    syncAllInProgress = false;
+  }
+}
+
+export function startSyncLoop(intervalMs = 60_000): () => void {
+  const trigger = () => {
+    void syncAll();
+  };
+  trigger();
+  window.addEventListener('online', trigger);
+  const interval = window.setInterval(trigger, intervalMs);
+  return () => {
+    window.removeEventListener('online', trigger);
+    window.clearInterval(interval);
+  };
+}
+
+export async function unsyncedCount(): Promise<number> {
+  const counts = await Promise.all(
+    SYNC_TABLES.map((table) => localTable(table).where('synced').equals(0).count())
+  );
+  return counts.reduce((sum, n) => sum + n, 0);
+}

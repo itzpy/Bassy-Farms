@@ -8,7 +8,7 @@ vi.mock('./supabase', () => ({
 }));
 
 import { supabase } from './supabase';
-import { pushTable, pullTable, resetSyncCursors } from './sync';
+import { pushTable, pullTable, resetSyncCursors, syncAll, unsyncedCount } from './sync';
 
 describe('pushTable', () => {
   beforeEach(async () => {
@@ -94,5 +94,72 @@ describe('pullTable', () => {
 
     const stored = await db.animals.get('a3');
     expect(stored).toMatchObject({ id: 'a3', tag: 'P-03', synced: 1 });
+  });
+});
+
+describe('unsyncedCount', () => {
+  beforeEach(async () => {
+    await db.animals.clear();
+    await db.plots.clear();
+    await db.events.clear();
+  });
+
+  it('sums unsynced records across all tables', async () => {
+    await db.animals.put({
+      id: 'a4', type: 'pig', tag: 'P-04', birth_date: null, status: 'active',
+      notes: null, created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+    });
+    await db.events.put({
+      id: 'e1', client_id: 'e1', event_type: 'feeding', entity_type: 'animal', entity_id: 'a4',
+      event_date: '2026-01-01', amount: null, category: null, notes: null, metadata: {},
+      created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+    });
+
+    const count = await unsyncedCount();
+    expect(count).toBe(2);
+  });
+});
+
+describe('syncAll reentrancy guard', () => {
+  beforeEach(async () => {
+    await db.animals.clear();
+    await db.plots.clear();
+    await db.events.clear();
+    resetSyncCursors();
+  });
+
+  it('does not run two full sync cycles concurrently', async () => {
+    let resolveUpsert: (value: { error: null }) => void = () => {};
+    const upsert = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveUpsert = resolve;
+        })
+    );
+    const gt = vi.fn().mockResolvedValue({ data: [], error: null });
+    const select = vi.fn().mockReturnValue({ gt });
+    (supabase.from as ReturnType<typeof vi.fn>).mockReturnValue({ upsert, select });
+
+    // Seed one unsynced record so pushTable actually calls upsert and stalls.
+    await db.animals.put({
+      id: 'a5', type: 'pig', tag: 'P-05', birth_date: null, status: 'active',
+      notes: null, created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+    });
+
+    const first = syncAll();
+
+    // Wait for the first sync cycle to actually reach the stalled upsert call.
+    await vi.waitFor(() => {
+      expect(upsert).toHaveBeenCalled();
+    });
+    const callsAfterFirstReachedUpsert = upsert.mock.calls.length;
+
+    const second = syncAll(); // should no-op immediately since first is still in-flight
+    await second; // resolves right away because of the reentrancy guard
+
+    expect(upsert.mock.calls.length).toBe(callsAfterFirstReachedUpsert);
+
+    resolveUpsert({ error: null });
+    await first;
   });
 });
