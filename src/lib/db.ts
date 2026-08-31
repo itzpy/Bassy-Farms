@@ -19,6 +19,11 @@ export class FarmDB extends Dexie {
   constructor() {
     super('farm-db');
     this.version(1).stores({
+      animals: 'id, type, status, synced, updated_at',
+      plots: 'id, synced, updated_at',
+      events: 'id, client_id, entity_type, entity_id, event_type, event_date, synced, updated_at',
+    });
+    this.version(2).stores({
       animals: 'id, tag, type, status, synced, updated_at',
       plots: 'id, synced, updated_at',
       events: 'id, client_id, entity_type, entity_id, event_type, event_date, synced, updated_at',

@@ -5,13 +5,20 @@ import { createAnimal } from './api';
 export function AnimalForm({ onCreated }: { onCreated?: (id: string) => void }) {
   const [type, setType] = useState<AnimalType>('pig');
   const [tag, setTag] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!tag.trim()) return;
-    const id = await createAnimal({ type, tag: tag.trim(), birth_date: null, notes: null });
-    setTag('');
-    onCreated?.(id);
+    setIsSubmitting(true);
+    try {
+      const id = await createAnimal({ type, tag: tag.trim(), birth_date: null, notes: null });
+      setTag('');
+      onCreated?.(id);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -25,7 +32,7 @@ export function AnimalForm({ onCreated }: { onCreated?: (id: string) => void }) 
       <label htmlFor="animal-tag">Tag</label>
       <input id="animal-tag" value={tag} onChange={(e) => setTag(e.target.value)} />
 
-      <button type="submit">Add animal</button>
+      <button type="submit" disabled={isSubmitting}>Add animal</button>
     </form>
   );
 }
