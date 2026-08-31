@@ -67,6 +67,11 @@ the app talks to Supabase directly.
 - PWA installability (manifest + service worker, real icons)
 - Animals: list with an add-animal form, detail view with event timeline, and a generic
   event-logging form reusable for future entity types
+- Unsynced-changes indicator (`src/components/UnsyncedIndicator.tsx`), shown in the app shell
+  while authenticated, polling `unsyncedCount()` and displaying "N unsynced changes" whenever
+  there's something waiting to sync
+- `AnimalDetail` distinguishes "still loading" from "no such animal", showing a clear
+  not-found message for a stale/bad `:id` instead of "Loading…" forever
 
 ## Not yet built
 
@@ -74,10 +79,3 @@ the app talks to Supabase directly.
   currently Animals-specific and will need to become entity-aware before Plots can reuse it.
 - Quick-log home screen shortcut
 - Reports / profitability dashboard (V2)
-- **Unsynced-changes indicator.** `unsyncedCount()` (`src/lib/sync.ts`) is implemented and
-  tested but not yet surfaced anywhere in the UI. The design spec calls for a small "N unsynced
-  changes" indicator as the mitigation for iOS Safari's IndexedDB eviction risk — worth adding
-  before relying on this for real field use.
-- `AnimalDetail`'s loading state doesn't distinguish "still loading" from "no such animal" — a
-  stale/bad `:id` in the URL shows "Loading…" forever instead of a not-found message. Worth
-  fixing before the Plots slice copies this pattern into `PlotDetail`.

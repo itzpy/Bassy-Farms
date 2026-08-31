@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './auth/AuthContext';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { AppRoutes } from './routes';
 import { startSyncLoop } from './lib/sync';
+import { UnsyncedIndicator } from './components/UnsyncedIndicator';
 
 function SyncManager() {
   const { session } = useAuth();
@@ -26,6 +27,7 @@ export default function App() {
       <BrowserRouter>
         <SyncManager />
         <ProtectedRoute>
+          <UnsyncedIndicator />
           <AppRoutes />
         </ProtectedRoute>
       </BrowserRouter>
