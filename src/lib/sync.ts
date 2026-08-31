@@ -25,7 +25,11 @@ export async function pushTable(table: SyncTable): Promise<void> {
       // creation time (animals/api.ts, events/api.ts) and never regenerated, so it's
       // already a stable idempotency key across all three tables. `client_id` on the
       // `events` table is a redundant belt-and-suspenders column, not the sync key.
-      const { error } = await supabase.from(table).upsert(remoteRecord, { onConflict: 'id' });
+      // `record` is typed as a union across all three local tables (LocalAnimal | LocalPlot
+      // | LocalEvent) because `table` is a SyncTable union, so `remoteRecord` doesn't
+      // structurally match whichever single-table row shape Supabase's upsert() overload
+      // resolution picked. Same limitation `pullTable` below works around with `as never`.
+      const { error } = await supabase.from(table).upsert(remoteRecord as never, { onConflict: 'id' });
       if (!error) {
         await localTable(table).update(record.id, { synced: 1 });
       } else {
