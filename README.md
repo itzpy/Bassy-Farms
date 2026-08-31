@@ -74,3 +74,10 @@ the app talks to Supabase directly.
   currently Animals-specific and will need to become entity-aware before Plots can reuse it.
 - Quick-log home screen shortcut
 - Reports / profitability dashboard (V2)
+- **Unsynced-changes indicator.** `unsyncedCount()` (`src/lib/sync.ts`) is implemented and
+  tested but not yet surfaced anywhere in the UI. The design spec calls for a small "N unsynced
+  changes" indicator as the mitigation for iOS Safari's IndexedDB eviction risk — worth adding
+  before relying on this for real field use.
+- `AnimalDetail`'s loading state doesn't distinguish "still loading" from "no such animal" — a
+  stale/bad `:id` in the URL shows "Loading…" forever instead of a not-found message. Worth
+  fixing before the Plots slice copies this pattern into `PlotDetail`.
