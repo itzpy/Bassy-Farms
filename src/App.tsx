@@ -1,19 +1,30 @@
 import { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from './auth/AuthContext';
+import { AuthProvider, useAuth } from './auth/AuthContext';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { AppRoutes } from './routes';
 import { startSyncLoop } from './lib/sync';
 
-export default function App() {
+function SyncManager() {
+  const { session } = useAuth();
+  const userId = session?.user.id;
+
   useEffect(() => {
+    if (!userId) return;
     const stop = startSyncLoop();
     return stop;
-  }, []);
+    // Keyed on user id (not the session object) so a token refresh — which produces a
+    // new session reference with the same user — doesn't tear down and restart the loop.
+  }, [userId]);
 
+  return null;
+}
+
+export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <SyncManager />
         <ProtectedRoute>
           <AppRoutes />
         </ProtectedRoute>
