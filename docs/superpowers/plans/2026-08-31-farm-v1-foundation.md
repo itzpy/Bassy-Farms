@@ -973,7 +973,7 @@ Delete `src/App.css` and `src/index.css`'s Vite-template boilerplate content if 
 
 - [ ] **Step 4: Verify it compiles**
 
-Run: `npx tsc --noEmit`
+Run: `npx tsc -b --noEmit` (NOT bare `npx tsc --noEmit` — the root `tsconfig.json` uses project references with `"files": []`, so the bare command silently checks zero files. `-b` actually type-checks the project. See Task 10's discovery of this.)
 Expected: exits 0. (Task 13/14 create the `AnimalsList`/`AnimalDetail` components this file imports — if running tasks strictly in order, this step will fail until those exist. Run it again after Task 14, or skip the check here and rely on Task 14's compile check.)
 
 - [ ] **Step 5: Commit**
@@ -1403,7 +1403,7 @@ export function AnimalDetail() {
 
 - [ ] **Step 7: Verify the whole app compiles**
 
-Run: `npx tsc --noEmit`
+Run: `npx tsc -b --noEmit` (real project-references check — see Task 10's note; bare `npx tsc --noEmit` checks nothing here)
 Expected: exits 0 (this also resolves Task 11 Step 4's deferred check, since `AnimalsList` and `AnimalDetail` now exist).
 
 - [ ] **Step 8: Run the full test suite**
