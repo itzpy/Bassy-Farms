@@ -128,38 +128,74 @@ describe('syncAll reentrancy guard', () => {
     resetSyncCursors();
   });
 
-  it('does not run two full sync cycles concurrently', async () => {
-    let resolveUpsert: (value: { error: null }) => void = () => {};
-    const upsert = vi.fn(
+  it('blocks a concurrent syncAll from reaching a later table, not just the stalled one', async () => {
+    // The first syncAll() is stalled inside pushTable('animals')'s upsert
+    // (there's an unsynced animals record so the upsert actually fires).
+    // A SEPARATE unsynced record lives in `plots`, a table SYNC_TABLES
+    // processes *after* animals. pushTable's own per-table `pushInProgress`
+    // guard only ever covers 'animals' at this point (it's set synchronously
+    // before the first await, so the stalled call already holds it) — it says
+    // nothing about 'plots'. So if syncAllInProgress did NOT exist, the second
+    // syncAll() call's pushTable('animals') would merely no-op on that guard,
+    // then continue on to pushTable('plots') and call its upsert. Asserting
+    // that never happens isolates syncAllInProgress specifically, independent
+    // of pushTable's per-table guard.
+    let resolveAnimalsUpsert: (value: { error: null }) => void = () => {};
+    const animalsUpsert = vi.fn(
       () =>
         new Promise((resolve) => {
-          resolveUpsert = resolve;
+          resolveAnimalsUpsert = resolve;
         })
     );
-    const gt = vi.fn().mockResolvedValue({ data: [], error: null });
-    const select = vi.fn().mockReturnValue({ gt });
-    (supabase.from as ReturnType<typeof vi.fn>).mockReturnValue({ upsert, select });
+    const animalsGt = vi.fn().mockResolvedValue({ data: [], error: null });
+    const animalsSelect = vi.fn().mockReturnValue({ gt: animalsGt });
 
-    // Seed one unsynced record so pushTable actually calls upsert and stalls.
+    const plotsUpsert = vi.fn().mockResolvedValue({ error: null });
+    const plotsGt = vi.fn().mockResolvedValue({ data: [], error: null });
+    const plotsSelect = vi.fn().mockReturnValue({ gt: plotsGt });
+
+    const eventsUpsert = vi.fn().mockResolvedValue({ error: null });
+    const eventsGt = vi.fn().mockResolvedValue({ data: [], error: null });
+    const eventsSelect = vi.fn().mockReturnValue({ gt: eventsGt });
+
+    (supabase.from as ReturnType<typeof vi.fn>).mockImplementation((table: string) => {
+      if (table === 'animals') return { upsert: animalsUpsert, select: animalsSelect };
+      if (table === 'plots') return { upsert: plotsUpsert, select: plotsSelect };
+      return { upsert: eventsUpsert, select: eventsSelect };
+    });
+
+    // Seed an unsynced animals record so pushTable('animals') actually calls
+    // upsert (and stalls on it), plus a separate unsynced record in `plots` —
+    // a table processed *after* animals — to prove the guard, not just an
+    // unsynced-record check.
     await db.animals.put({
       id: 'a5', type: 'pig', tag: 'P-05', birth_date: null, status: 'active',
       notes: null, created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
     });
+    await db.plots.put({
+      id: 'p1', name: 'North Field', crop_type: null, planted_date: null, area: null, notes: null,
+      created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+    });
 
     const first = syncAll();
 
-    // Wait for the first sync cycle to actually reach the stalled upsert call.
+    // Wait for the first sync cycle to actually reach the stalled animals upsert.
     await vi.waitFor(() => {
-      expect(upsert).toHaveBeenCalled();
+      expect(animalsUpsert).toHaveBeenCalled();
     });
-    const callsAfterFirstReachedUpsert = upsert.mock.calls.length;
 
     const second = syncAll(); // should no-op immediately since first is still in-flight
     await second; // resolves right away because of the reentrancy guard
 
-    expect(upsert.mock.calls.length).toBe(callsAfterFirstReachedUpsert);
+    // The second call must not have reached plots at all.
+    expect(plotsUpsert).not.toHaveBeenCalled();
 
-    resolveUpsert({ error: null });
+    // Unblock the first call and let it run to completion.
+    resolveAnimalsUpsert({ error: null });
     await first;
+
+    // Now that the (only) in-flight syncAll has finished its own traversal,
+    // it should have reached and pushed the plots record itself.
+    expect(plotsUpsert).toHaveBeenCalled();
   });
 });
