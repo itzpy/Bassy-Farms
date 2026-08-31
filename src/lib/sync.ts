@@ -36,3 +36,31 @@ export async function pushTable(table: SyncTable): Promise<void> {
     pushInProgress.delete(table);
   }
 }
+
+const EPOCH = new Date(0).toISOString();
+
+let lastPullAt: Record<SyncTable, string> = {
+  animals: EPOCH,
+  plots: EPOCH,
+  events: EPOCH,
+};
+
+export function resetSyncCursors(): void {
+  lastPullAt = { animals: EPOCH, plots: EPOCH, events: EPOCH };
+}
+
+export async function pullTable(table: SyncTable): Promise<void> {
+  const { data, error } = await supabase
+    .from(table)
+    .select('*')
+    .gt('updated_at', lastPullAt[table]);
+
+  if (error || !data) return;
+
+  for (const remote of data as Array<Record<string, unknown> & { id: string; updated_at: string }>) {
+    await localTable(table).put({ ...remote, synced: 1 } as never);
+    if (remote.updated_at > lastPullAt[table]) {
+      lastPullAt[table] = remote.updated_at;
+    }
+  }
+}

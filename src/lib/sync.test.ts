@@ -8,7 +8,7 @@ vi.mock('./supabase', () => ({
 }));
 
 import { supabase } from './supabase';
-import { pushTable } from './sync';
+import { pushTable, pullTable, resetSyncCursors } from './sync';
 
 describe('pushTable', () => {
   beforeEach(async () => {
@@ -62,5 +62,37 @@ describe('pushTable', () => {
 
     const stored = await db.animals.get('a2');
     expect(stored?.synced).toBe(0);
+  });
+});
+
+describe('pullTable', () => {
+  beforeEach(async () => {
+    await db.animals.clear();
+    resetSyncCursors();
+  });
+
+  it('upserts remote records into the local table as synced', async () => {
+    const gt = vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: 'a3',
+          type: 'pig',
+          tag: 'P-03',
+          birth_date: null,
+          status: 'active',
+          notes: null,
+          created_at: '2026-02-01T00:00:00.000Z',
+          updated_at: '2026-02-01T00:00:00.000Z',
+        },
+      ],
+      error: null,
+    });
+    const select = vi.fn().mockReturnValue({ gt });
+    (supabase.from as ReturnType<typeof vi.fn>).mockReturnValue({ select });
+
+    await pullTable('animals');
+
+    const stored = await db.animals.get('a3');
+    expect(stored).toMatchObject({ id: 'a3', tag: 'P-03', synced: 1 });
   });
 });
