@@ -3,10 +3,18 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../lib/db';
 import { EventForm } from '../events/EventForm';
 
+// `useLiveQuery` returns `undefined` both while the query is still pending AND
+// once it has genuinely resolved to "no such row." Passing this sentinel as
+// the default result lets us tell those two states apart: it's only ever
+// returned before the query's first real resolution.
+const PENDING = Symbol('pending');
+
 export function AnimalDetail() {
   const { id } = useParams<{ id: string }>();
 
-  const animal = useLiveQuery(() => (id ? db.animals.get(id) : undefined), [id]);
+  const result = useLiveQuery(() => (id ? db.animals.get(id) : undefined), [id], PENDING);
+  const loading = result === PENDING;
+  const animal = loading ? undefined : result;
   const events = useLiveQuery(
     () =>
       id
@@ -20,7 +28,8 @@ export function AnimalDetail() {
     [id]
   );
 
-  if (!animal) return <p>Loading…</p>;
+  if (loading) return <p>Loading…</p>;
+  if (!animal) return <p>Animal not found.</p>;
 
   return (
     <div>
