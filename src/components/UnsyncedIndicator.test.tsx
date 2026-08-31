@@ -15,7 +15,7 @@ describe('UnsyncedIndicator', () => {
   });
 
   it('renders nothing when there are no unsynced records', async () => {
-    render(<UnsyncedIndicator pollIntervalMs={10} />);
+    render(<UnsyncedIndicator />);
 
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
@@ -49,7 +49,7 @@ describe('UnsyncedIndicator', () => {
       synced: 0,
     });
 
-    render(<UnsyncedIndicator pollIntervalMs={10} />);
+    render(<UnsyncedIndicator />);
 
     expect(await screen.findByText(/2 unsynced changes/i)).toBeInTheDocument();
   });
