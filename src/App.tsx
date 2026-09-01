@@ -29,7 +29,8 @@ export default function App() {
         <ProtectedRoute>
           <div className="app-shell">
             <nav>
-              <Link to="/animals">Animals</Link> <Link to="/batches">Batches</Link>
+              <Link to="/animals">Animals</Link> <Link to="/batches">Batches</Link>{' '}
+              <Link to="/plots">Plots</Link>
             </nav>
             <UnsyncedIndicator />
             <AppRoutes />
