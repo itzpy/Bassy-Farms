@@ -7,7 +7,7 @@ export function UnsyncedIndicator() {
   if (!count) return null;
 
   return (
-    <p role="status">
+    <p role="status" className="unsynced-indicator">
       {count} unsynced change{count === 1 ? '' : 's'}
     </p>
   );

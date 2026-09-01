@@ -5,7 +5,7 @@ import { SignIn } from './SignIn';
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
 
-  if (loading) return <p>Loading…</p>;
-  if (!session) return <SignIn />;
+  if (loading) return <div className="app-shell"><p>Loading…</p></div>;
+  if (!session) return <div className="app-shell"><SignIn /></div>;
   return <>{children}</>;
 }

@@ -27,8 +27,10 @@ export default function App() {
       <BrowserRouter>
         <SyncManager />
         <ProtectedRoute>
-          <UnsyncedIndicator />
-          <AppRoutes />
+          <div className="app-shell">
+            <UnsyncedIndicator />
+            <AppRoutes />
+          </div>
         </ProtectedRoute>
       </BrowserRouter>
     </AuthProvider>
