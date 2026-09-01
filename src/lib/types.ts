@@ -1,5 +1,6 @@
 export type AnimalType = 'pig' | 'goat';
 export type AnimalStatus = 'active' | 'sold' | 'deceased';
+export type PigStage = 'starter' | 'grower' | 'finisher';
 
 export interface Animal {
   id: string;
@@ -7,6 +8,7 @@ export interface Animal {
   tag: string;
   birth_date: string | null;
   status: AnimalStatus;
+  stage?: PigStage | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
