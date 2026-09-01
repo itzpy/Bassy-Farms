@@ -1,9 +1,9 @@
 /* ---------- Design tokens ---------- */
 :root {
-  --color-primary: #0d9488;
+  --color-primary: #0f766e;
   --color-on-primary: #ffffff;
   --color-secondary: #14b8a6;
-  --color-accent: #ea580c;
+  --color-accent: #c2410c;
   --color-on-accent: #ffffff;
   --color-background: #f0fdfa;
   --color-foreground: #134e4a;
@@ -70,9 +70,11 @@ ol {
 }
 
 a {
-  /* --color-primary on --color-background is only ~3.6:1, below AA for
-     normal-weight text, so links use the high-contrast foreground color
-     and rely on the underline (plus a primary-colored hover) to read as links. */
+  /* --color-foreground is used for link text (rather than --color-primary)
+     for maximum contrast against --color-background; the underline (plus a
+     primary-colored hover) is what reads as a link. --color-primary was
+     darkened to fix button-text contrast and would itself now pass AA here
+     too (~5.2:1), but foreground is kept as the safer, higher-contrast choice. */
   color: var(--color-foreground);
   text-decoration: underline;
 }
@@ -166,7 +168,7 @@ textarea:focus {
 
 [role='alert'] {
   color: var(--color-destructive);
-  background-color: #fef2f2;
+  background-color: #ffffff;
   border: 1px solid var(--color-destructive);
   border-radius: var(--radius);
   padding: var(--space-1);
