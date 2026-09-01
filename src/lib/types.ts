@@ -46,7 +46,8 @@ export type EventType =
   | 'planting'
   | 'harvest'
   | 'expense'
-  | 'sale';
+  | 'sale'
+  | 'input_application';
 
 export type EntityType = 'animal' | 'plot' | 'farm' | 'batch';
 

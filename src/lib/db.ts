@@ -38,6 +38,12 @@ export class FarmDB extends Dexie {
       events: 'id, client_id, entity_type, entity_id, event_type, event_date, synced, updated_at',
       batches: 'id, purchase_date, synced, updated_at',
     });
+    this.version(4).stores({
+      animals: 'id, tag, type, status, synced, updated_at',
+      plots: 'id, name, synced, updated_at',
+      events: 'id, client_id, entity_type, entity_id, event_type, event_date, synced, updated_at',
+      batches: 'id, purchase_date, synced, updated_at',
+    });
   }
 }
 
