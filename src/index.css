@@ -190,7 +190,7 @@ button {
 }
 
 button:hover:not(:disabled) {
-  background-color: #c2410c;
+  background-color: #9a3412;
 }
 
 button:disabled {
