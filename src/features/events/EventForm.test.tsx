@@ -172,4 +172,42 @@ describe('EventForm', () => {
     expect(screen.getByText('Amount', { selector: 'label' })).toBeInTheDocument();
     expect(screen.queryByText('Total amount')).not.toBeInTheDocument();
   });
+
+  it('offers planting/harvest/input_application/expense/sale for a plot, defaulting to input_application', async () => {
+    render(<EventForm entityType="plot" entityId="p1" />);
+
+    const select = screen.getByLabelText(/event/i) as HTMLSelectElement;
+    expect(select).toHaveValue('input_application');
+    const optionValues = Array.from(select.options).map((o) => o.value);
+    expect(optionValues).toEqual(['planting', 'harvest', 'input_application', 'expense', 'sale']);
+  });
+
+  it('shows input-application fields for a plot, and stores them as metadata', async () => {
+    const user = userEvent.setup();
+    render(<EventForm entityType="plot" entityId="p2" />);
+
+    await user.selectOptions(screen.getByLabelText(/input type/i), 'insecticide');
+    await user.type(screen.getByLabelText(/product name/i), 'Roundup');
+    await user.type(screen.getByLabelText(/quantity/i), '2');
+    await user.selectOptions(screen.getByLabelText(/unit/i), 'liters');
+    await user.click(screen.getByRole('button', { name: /log event/i }));
+
+    const events = await db.events.where('entity_id').equals('p2').toArray();
+    expect(events).toHaveLength(1);
+    expect(events[0].metadata).toMatchObject({
+      input_type: 'insecticide',
+      product_name: 'Roundup',
+      quantity: 2,
+      unit: 'liters',
+    });
+  });
+
+  it('does not show input-application fields for a plot planting event', async () => {
+    const user = userEvent.setup();
+    render(<EventForm entityType="plot" entityId="p3" />);
+
+    await user.selectOptions(screen.getByLabelText(/event/i), 'planting');
+
+    expect(screen.queryByLabelText(/input type/i)).not.toBeInTheDocument();
+  });
 });

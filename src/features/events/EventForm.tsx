@@ -8,7 +8,27 @@ const ANIMAL_EVENT_TYPES: EventType[] = [
 
 const BATCH_EVENT_TYPES: EventType[] = ['expense', 'sale', 'death'];
 
+const PLOT_EVENT_TYPES: EventType[] = ['planting', 'harvest', 'input_application', 'expense', 'sale'];
+
+const FARM_EVENT_TYPES: EventType[] = ['expense', 'sale'];
+
+const EVENT_TYPES_BY_ENTITY: Record<EntityType, EventType[]> = {
+  animal: ANIMAL_EVENT_TYPES,
+  batch: BATCH_EVENT_TYPES,
+  plot: PLOT_EVENT_TYPES,
+  farm: FARM_EVENT_TYPES,
+};
+
+const DEFAULT_EVENT_TYPE_BY_ENTITY: Record<EntityType, EventType> = {
+  animal: 'feeding',
+  batch: 'expense',
+  plot: 'input_application',
+  farm: 'expense',
+};
+
 const PIG_STAGES: PigStage[] = ['starter', 'grower', 'finisher'];
+const INPUT_TYPES = ['insecticide', 'fungicide', 'herbicide', 'fertilizer', 'other'] as const;
+const INPUT_UNITS = ['liters', 'kg'] as const;
 
 export function EventForm({
   entityType,
@@ -23,20 +43,25 @@ export function EventForm({
   pigStage?: PigStage | null;
   onCreated?: () => void;
 }) {
-  const eventTypeOptions = entityType === 'batch' ? BATCH_EVENT_TYPES : ANIMAL_EVENT_TYPES;
-  const [eventType, setEventType] = useState<EventType>(entityType === 'batch' ? 'expense' : 'feeding');
+  const eventTypeOptions = EVENT_TYPES_BY_ENTITY[entityType];
+  const [eventType, setEventType] = useState<EventType>(DEFAULT_EVENT_TYPE_BY_ENTITY[entityType]);
   const [eventDate, setEventDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState('');
   const [feedType, setFeedType] = useState(() => (animalType === 'pig' ? pigStage ?? 'starter' : ''));
   const [quantityKg, setQuantityKg] = useState('');
   const [batchQuantity, setBatchQuantity] = useState('1');
   const [amount, setAmount] = useState('');
+  const [inputType, setInputType] = useState<(typeof INPUT_TYPES)[number]>('insecticide');
+  const [productName, setProductName] = useState('');
+  const [inputQuantity, setInputQuantity] = useState('');
+  const [inputUnit, setInputUnit] = useState<(typeof INPUT_UNITS)[number]>('liters');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const showFeedFields = eventType === 'feeding' && (animalType === 'pig' || animalType === 'goat');
   const showAmountField = eventType === 'expense' || eventType === 'sale';
   const showBatchQuantityField = entityType === 'batch' && (eventType === 'sale' || eventType === 'death');
+  const showInputFields = entityType === 'plot' && eventType === 'input_application';
 
   function buildMetadata(): Record<string, unknown> {
     const metadata: Record<string, unknown> = {};
@@ -51,6 +76,15 @@ export function EventForm({
       const parsedCount = Number(batchQuantity);
       if (batchQuantity.trim() && Number.isFinite(parsedCount) && parsedCount > 0) {
         metadata.quantity = parsedCount;
+      }
+    }
+    if (showInputFields) {
+      metadata.input_type = inputType;
+      if (productName.trim()) metadata.product_name = productName.trim();
+      const parsedInputQuantity = Number(inputQuantity);
+      if (inputQuantity.trim() && Number.isFinite(parsedInputQuantity) && parsedInputQuantity >= 0) {
+        metadata.quantity = parsedInputQuantity;
+        metadata.unit = inputUnit;
       }
     }
     return metadata;
@@ -83,6 +117,8 @@ export function EventForm({
       setQuantityKg('');
       setAmount('');
       setBatchQuantity('1');
+      setProductName('');
+      setInputQuantity('');
       onCreated?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to log event');
@@ -146,6 +182,45 @@ export function EventForm({
             value={batchQuantity}
             onChange={(e) => setBatchQuantity(e.target.value)}
           />
+        </>
+      )}
+
+      {showInputFields && (
+        <>
+          <label htmlFor="input-type">Input type</label>
+          <select
+            id="input-type"
+            value={inputType}
+            onChange={(e) => setInputType(e.target.value as (typeof INPUT_TYPES)[number])}
+          >
+            {INPUT_TYPES.map((type) => (
+              <option key={type} value={type}>{type}</option>
+            ))}
+          </select>
+
+          <label htmlFor="product-name">Product name</label>
+          <input id="product-name" value={productName} onChange={(e) => setProductName(e.target.value)} />
+
+          <label htmlFor="input-quantity">Quantity</label>
+          <input
+            id="input-quantity"
+            type="number"
+            min="0"
+            step="0.1"
+            value={inputQuantity}
+            onChange={(e) => setInputQuantity(e.target.value)}
+          />
+
+          <label htmlFor="input-unit">Unit</label>
+          <select
+            id="input-unit"
+            value={inputUnit}
+            onChange={(e) => setInputUnit(e.target.value as (typeof INPUT_UNITS)[number])}
+          >
+            {INPUT_UNITS.map((unit) => (
+              <option key={unit} value={unit}>{unit}</option>
+            ))}
+          </select>
         </>
       )}
 
