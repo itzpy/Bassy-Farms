@@ -82,7 +82,7 @@ export function BatchDetail() {
             <li key={event.id}>
               {event.event_date} — {event.event_type}
               {detail ? ` — ${detail}` : ''}
-              {event.amount != null ? ` — ${event.amount}` : ''}
+              {event.amount != null ? ` — ${event.amount.toFixed(2)}` : ''}
               {event.notes ? ` — ${event.notes}` : ''}
             </li>
           );
