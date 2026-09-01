@@ -1,5 +1,5 @@
 import { db } from '../../lib/db';
-import type { AnimalType, AnimalStatus } from '../../lib/types';
+import type { AnimalType, AnimalStatus, PigStage } from '../../lib/types';
 
 export interface NewAnimalInput {
   type: AnimalType;
@@ -17,6 +17,7 @@ export async function createAnimal(input: NewAnimalInput): Promise<string> {
     tag: input.tag,
     birth_date: input.birth_date,
     status: 'active',
+    stage: null,
     notes: input.notes,
     created_at: now,
     updated_at: now,
@@ -27,4 +28,8 @@ export async function createAnimal(input: NewAnimalInput): Promise<string> {
 
 export async function updateAnimalStatus(id: string, status: AnimalStatus): Promise<void> {
   await db.animals.update(id, { status, updated_at: new Date().toISOString(), synced: 0 });
+}
+
+export async function updateAnimalStage(id: string, stage: PigStage): Promise<void> {
+  await db.animals.update(id, { stage, updated_at: new Date().toISOString(), synced: 0 });
 }
