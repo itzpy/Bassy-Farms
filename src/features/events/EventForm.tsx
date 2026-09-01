@@ -82,6 +82,7 @@ export function EventForm({
       setNotes('');
       setQuantityKg('');
       setAmount('');
+      setBatchQuantity('1');
       onCreated?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to log event');
@@ -150,7 +151,7 @@ export function EventForm({
 
       {showAmountField && (
         <>
-          <label htmlFor="event-amount">Amount</label>
+          <label htmlFor="event-amount">{showBatchQuantityField ? 'Total amount' : 'Amount'}</label>
           <input
             id="event-amount"
             type="number"

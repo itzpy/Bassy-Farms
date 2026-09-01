@@ -135,4 +135,41 @@ describe('EventForm', () => {
 
     expect(screen.queryByLabelText(/number of pigs/i)).not.toBeInTheDocument();
   });
+
+  it('resets the headcount field back to 1 after a successful batch sale submit', async () => {
+    const user = userEvent.setup();
+    render(<EventForm entityType="batch" entityId="b4" />);
+
+    await user.selectOptions(screen.getByLabelText(/event/i), 'sale');
+    const countInput = screen.getByLabelText(/number of pigs/i) as HTMLInputElement;
+    await user.clear(countInput);
+    await user.type(countInput, '4');
+    expect(countInput).toHaveValue(4);
+
+    await user.type(screen.getByLabelText(/amount/i), '800');
+    await user.click(screen.getByRole('button', { name: /log event/i }));
+
+    await waitFor(async () => {
+      const events = await db.events.where('entity_id').equals('b4').toArray();
+      expect(events).toHaveLength(1);
+    });
+
+    await waitFor(() => {
+      expect(countInput).toHaveValue(1);
+    });
+  });
+
+  it('labels the amount field "Total amount" for a batch sale, but plain "Amount" otherwise', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<EventForm entityType="batch" entityId="b5" />);
+
+    await user.selectOptions(screen.getByLabelText(/event/i), 'sale');
+    expect(screen.getByText('Total amount')).toBeInTheDocument();
+    expect(screen.queryByText('Amount', { selector: 'label' })).not.toBeInTheDocument();
+
+    rerender(<EventForm entityType="animal" entityId="a7" />);
+    await user.selectOptions(screen.getByLabelText(/event/i), 'expense');
+    expect(screen.getByText('Amount', { selector: 'label' })).toBeInTheDocument();
+    expect(screen.queryByText('Total amount')).not.toBeInTheDocument();
+  });
 });
