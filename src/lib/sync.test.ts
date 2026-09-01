@@ -204,7 +204,7 @@ describe('startSyncLoop', () => {
   // Only setInterval/clearInterval are faked so real async work (IndexedDB via
   // Dexie/fake-indexeddb, and the mocked supabase promises) keeps flowing on its
   // own (real, unfaked) timers. A single macrotask tick isn't always enough to
-  // drain a whole syncAll() cycle (3 tables x push+pull, each round-tripping
+  // drain a whole syncAll() cycle (4 tables x push+pull, each round-tripping
   // through fake-indexeddb), so wait for the call count to actually reach the
   // expected value instead of guessing how many ticks are needed.
   const waitForCallCount = (n: number) =>
@@ -221,11 +221,12 @@ describe('startSyncLoop', () => {
     await db.animals.clear();
     await db.plots.clear();
     await db.events.clear();
+    await db.batches.clear();
     resetSyncCursors();
 
     // No unsynced records exist (tables were just cleared), so pushTable makes
     // zero supabase calls per table; pullTable makes exactly one (`select().gt()`)
-    // per table. That gives a clean, predictable "3 calls == one syncAll ran".
+    // per table. That gives a clean, predictable "4 calls == one syncAll ran".
     (supabase.from as ReturnType<typeof vi.fn>).mockReset();
     (supabase.from as ReturnType<typeof vi.fn>).mockImplementation(() => ({
       upsert: vi.fn().mockResolvedValue({ error: null }),
@@ -243,18 +244,18 @@ describe('startSyncLoop', () => {
     const cleanup = startSyncLoop(1000);
 
     // (a) triggers a sync immediately, synchronously on call.
-    await waitForCallCount(3);
+    await waitForCallCount(4);
 
     // (b) triggers again on the 'online' event.
     window.dispatchEvent(new Event('online'));
-    await waitForCallCount(6);
+    await waitForCallCount(8);
 
     // (c) triggers again on each interval tick.
     vi.advanceTimersByTime(1000);
-    await waitForCallCount(9);
+    await waitForCallCount(12);
 
     vi.advanceTimersByTime(1000);
-    await waitForCallCount(12);
+    await waitForCallCount(16);
 
     // (d) cleanup stops BOTH future interval ticks AND future 'online' events.
     cleanup();
@@ -262,6 +263,6 @@ describe('startSyncLoop', () => {
     window.dispatchEvent(new Event('online'));
     vi.advanceTimersByTime(5000);
     await realDelay(100);
-    expect(supabase.from).toHaveBeenCalledTimes(12);
+    expect(supabase.from).toHaveBeenCalledTimes(16);
   });
 });

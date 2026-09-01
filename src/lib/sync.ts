@@ -1,7 +1,7 @@
 import { db } from './db';
 import { supabase } from './supabase';
 
-export const SYNC_TABLES = ['animals', 'plots', 'events'] as const;
+export const SYNC_TABLES = ['animals', 'plots', 'events', 'batches'] as const;
 export type SyncTable = (typeof SYNC_TABLES)[number];
 
 function localTable(table: SyncTable) {
@@ -47,10 +47,11 @@ let lastPullAt: Record<SyncTable, string> = {
   animals: EPOCH,
   plots: EPOCH,
   events: EPOCH,
+  batches: EPOCH,
 };
 
 export function resetSyncCursors(): void {
-  lastPullAt = { animals: EPOCH, plots: EPOCH, events: EPOCH };
+  lastPullAt = { animals: EPOCH, plots: EPOCH, events: EPOCH, batches: EPOCH };
 }
 
 export async function pullTable(table: SyncTable): Promise<void> {

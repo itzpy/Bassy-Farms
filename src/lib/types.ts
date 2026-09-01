@@ -25,6 +25,17 @@ export interface Plot {
   updated_at: string;
 }
 
+export interface Batch {
+  id: string;
+  name: string;
+  purchase_date: string;
+  initial_count: number;
+  purchase_cost: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export type EventType =
   | 'feeding'
   | 'vaccination'
@@ -37,7 +48,7 @@ export type EventType =
   | 'expense'
   | 'sale';
 
-export type EntityType = 'animal' | 'plot' | 'farm';
+export type EntityType = 'animal' | 'plot' | 'farm' | 'batch';
 
 export interface FarmEvent {
   id: string;
