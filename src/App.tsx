@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { AppRoutes } from './routes';
@@ -28,6 +28,9 @@ export default function App() {
         <SyncManager />
         <ProtectedRoute>
           <div className="app-shell">
+            <nav>
+              <Link to="/animals">Animals</Link> <Link to="/batches">Batches</Link>
+            </nav>
             <UnsyncedIndicator />
             <AppRoutes />
           </div>
