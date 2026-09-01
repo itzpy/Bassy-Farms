@@ -44,9 +44,13 @@ export function PlotDetail() {
     <div>
       <h1>{plot.name}</h1>
       <p>
-        {plot.crop_type ? `${plot.crop_type} — ` : ''}
-        {plot.planted_date ? `planted ${plot.planted_date}` : 'not yet planted'}
-        {plot.area != null ? ` — ${plot.area} area` : ''}
+        {[
+          plot.crop_type,
+          plot.planted_date ? `planted ${plot.planted_date}` : 'not yet planted',
+          plot.area != null ? `${plot.area} area` : null,
+        ]
+          .filter(Boolean)
+          .join(' — ')}
       </p>
 
       <h2>Log an event</h2>
