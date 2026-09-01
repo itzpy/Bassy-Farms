@@ -780,7 +780,7 @@ describe('PlotDetail', () => {
     await db.events.put({
       id: 'e1', client_id: 'e1', event_type: 'input_application', entity_type: 'plot', entity_id: 'p2',
       event_date: '2026-05-01', amount: null, category: null, notes: null,
-      metadata: { input_type: 'insecticide', product_name: 'Roundup', quantity: 2, unit: 'liters' },
+      metadata: { input_type: 'insecticide', product_name: 'Roundup', input_quantity: 2, unit: 'liters' },
       created_at: '2026-05-01T00:00:00.000Z', updated_at: '2026-05-01T00:00:00.000Z', synced: 0,
     });
 
@@ -814,7 +814,7 @@ function formatInputDetail(event: LocalEvent): string {
   if (event.event_type !== 'input_application') return '';
   const inputType = typeof event.metadata.input_type === 'string' ? event.metadata.input_type : null;
   const productName = typeof event.metadata.product_name === 'string' ? event.metadata.product_name : null;
-  const quantity = typeof event.metadata.quantity === 'number' ? event.metadata.quantity : null;
+  const quantity = typeof event.metadata.input_quantity === 'number' ? event.metadata.input_quantity : null;
   const unit = typeof event.metadata.unit === 'string' ? event.metadata.unit : null;
   const quantityPart = quantity != null ? `${quantity}${unit ? ` ${unit}` : ''}` : null;
   return [inputType, productName, quantityPart].filter(Boolean).join(', ');
