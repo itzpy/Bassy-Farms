@@ -6,6 +6,8 @@ const ANIMAL_EVENT_TYPES: EventType[] = [
   'feeding', 'vaccination', 'weight', 'health_check', 'breeding', 'death', 'expense', 'sale',
 ];
 
+const BATCH_EVENT_TYPES: EventType[] = ['expense', 'sale', 'death'];
+
 const PIG_STAGES: PigStage[] = ['starter', 'grower', 'finisher'];
 
 export function EventForm({
@@ -21,25 +23,44 @@ export function EventForm({
   pigStage?: PigStage | null;
   onCreated?: () => void;
 }) {
-  const [eventType, setEventType] = useState<EventType>('feeding');
+  const eventTypeOptions = entityType === 'batch' ? BATCH_EVENT_TYPES : ANIMAL_EVENT_TYPES;
+  const [eventType, setEventType] = useState<EventType>(entityType === 'batch' ? 'expense' : 'feeding');
   const [eventDate, setEventDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState('');
   const [feedType, setFeedType] = useState(() => (animalType === 'pig' ? pigStage ?? 'starter' : ''));
   const [quantityKg, setQuantityKg] = useState('');
+  const [batchQuantity, setBatchQuantity] = useState('1');
+  const [amount, setAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const showFeedFields = eventType === 'feeding' && (animalType === 'pig' || animalType === 'goat');
+  const showAmountField = eventType === 'expense' || eventType === 'sale';
+  const showBatchQuantityField = entityType === 'batch' && (eventType === 'sale' || eventType === 'death');
 
   function buildMetadata(): Record<string, unknown> {
-    if (!showFeedFields) return {};
     const metadata: Record<string, unknown> = {};
-    if (feedType.trim()) metadata.feed_type = feedType.trim();
-    const parsedQuantity = Number(quantityKg);
-    if (quantityKg.trim() && Number.isFinite(parsedQuantity) && parsedQuantity >= 0) {
-      metadata.quantity_kg = parsedQuantity;
+    if (showFeedFields) {
+      if (feedType.trim()) metadata.feed_type = feedType.trim();
+      const parsedQuantity = Number(quantityKg);
+      if (quantityKg.trim() && Number.isFinite(parsedQuantity) && parsedQuantity >= 0) {
+        metadata.quantity_kg = parsedQuantity;
+      }
+    }
+    if (showBatchQuantityField) {
+      const parsedCount = Number(batchQuantity);
+      if (batchQuantity.trim() && Number.isFinite(parsedCount) && parsedCount > 0) {
+        metadata.quantity = parsedCount;
+      }
     }
     return metadata;
+  }
+
+  function buildAmount(): number | null {
+    if (!showAmountField) return null;
+    const parsed = Number(amount);
+    if (amount.trim() && Number.isFinite(parsed) && parsed >= 0) return parsed;
+    return null;
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -53,13 +74,14 @@ export function EventForm({
         entity_type: entityType,
         entity_id: entityId,
         event_date: eventDate,
-        amount: null,
+        amount: buildAmount(),
         category: null,
         notes: notes.trim() || null,
         metadata: buildMetadata(),
       });
       setNotes('');
       setQuantityKg('');
+      setAmount('');
       onCreated?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to log event');
@@ -72,7 +94,7 @@ export function EventForm({
     <form onSubmit={handleSubmit}>
       <label htmlFor="event-type">Event</label>
       <select id="event-type" value={eventType} onChange={(e) => setEventType(e.target.value as EventType)}>
-        {ANIMAL_EVENT_TYPES.map((type) => (
+        {eventTypeOptions.map((type) => (
           <option key={type} value={type}>{type}</option>
         ))}
       </select>
@@ -108,6 +130,34 @@ export function EventForm({
             step="0.1"
             value={quantityKg}
             onChange={(e) => setQuantityKg(e.target.value)}
+          />
+        </>
+      )}
+
+      {showBatchQuantityField && (
+        <>
+          <label htmlFor="batch-quantity">Number of pigs</label>
+          <input
+            id="batch-quantity"
+            type="number"
+            min="1"
+            step="1"
+            value={batchQuantity}
+            onChange={(e) => setBatchQuantity(e.target.value)}
+          />
+        </>
+      )}
+
+      {showAmountField && (
+        <>
+          <label htmlFor="event-amount">Amount</label>
+          <input
+            id="event-amount"
+            type="number"
+            min="0"
+            step="0.01"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
           />
         </>
       )}

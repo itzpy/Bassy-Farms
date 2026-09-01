@@ -88,4 +88,51 @@ describe('EventForm', () => {
     expect(events[0].metadata).toMatchObject({ feed_type: 'Hay' });
     expect(events[0].metadata).not.toHaveProperty('quantity_kg');
   });
+
+  it('shows an amount field for expense/sale events on any entity type, and stores it', async () => {
+    const user = userEvent.setup();
+    render(<EventForm entityType="animal" entityId="a6" />);
+
+    await user.selectOptions(screen.getByLabelText(/event/i), 'expense');
+    await user.type(screen.getByLabelText(/amount/i), '25.50');
+    await user.click(screen.getByRole('button', { name: /log event/i }));
+
+    const events = await db.events.where('entity_id').equals('a6').toArray();
+    expect(events).toHaveLength(1);
+    expect(events[0].amount).toBe(25.5);
+  });
+
+  it('offers only expense/sale/death for a batch, defaulting to expense', async () => {
+    render(<EventForm entityType="batch" entityId="b1" />);
+
+    const select = screen.getByLabelText(/event/i) as HTMLSelectElement;
+    expect(select).toHaveValue('expense');
+    const optionValues = Array.from(select.options).map((o) => o.value);
+    expect(optionValues).toEqual(['expense', 'sale', 'death']);
+  });
+
+  it('shows a headcount field for a batch sale, defaulted to 1, and stores it as metadata.quantity', async () => {
+    const user = userEvent.setup();
+    render(<EventForm entityType="batch" entityId="b2" />);
+
+    await user.selectOptions(screen.getByLabelText(/event/i), 'sale');
+    const countInput = screen.getByLabelText(/number of pigs/i);
+    expect(countInput).toHaveValue(1);
+
+    await user.clear(countInput);
+    await user.type(countInput, '3');
+    await user.type(screen.getByLabelText(/amount/i), '600');
+    await user.click(screen.getByRole('button', { name: /log event/i }));
+
+    const events = await db.events.where('entity_id').equals('b2').toArray();
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ amount: 600 });
+    expect(events[0].metadata).toMatchObject({ quantity: 3 });
+  });
+
+  it('does not show a headcount field for a batch expense', async () => {
+    render(<EventForm entityType="batch" entityId="b3" />);
+
+    expect(screen.queryByLabelText(/number of pigs/i)).not.toBeInTheDocument();
+  });
 });
