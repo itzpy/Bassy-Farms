@@ -1,6 +1,8 @@
 import { useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../lib/db';
+import { db, type LocalEvent } from '../../lib/db';
+import type { PigStage } from '../../lib/types';
+import { updateAnimalStage } from './api';
 import { EventForm } from '../events/EventForm';
 
 // `useLiveQuery` returns `undefined` both while the query is still pending AND
@@ -8,6 +10,13 @@ import { EventForm } from '../events/EventForm';
 // the default result lets us tell those two states apart: it's only ever
 // returned before the query's first real resolution.
 const PENDING = Symbol('pending');
+
+function formatFeedDetail(event: LocalEvent): string {
+  if (event.event_type !== 'feeding') return '';
+  const feedType = typeof event.metadata.feed_type === 'string' ? event.metadata.feed_type : null;
+  const quantity = typeof event.metadata.quantity_kg === 'number' ? event.metadata.quantity_kg : null;
+  return [feedType, quantity != null ? `${quantity}kg` : null].filter(Boolean).join(', ');
+}
 
 export function AnimalDetail() {
   const { id } = useParams<{ id: string }>();
@@ -36,16 +45,41 @@ export function AnimalDetail() {
       <h1>{animal.tag} ({animal.type})</h1>
       <p>Status: {animal.status}</p>
 
+      {animal.type === 'pig' && (
+        <p>
+          <label htmlFor="pig-stage">Stage</label>{' '}
+          <select
+            id="pig-stage"
+            value={animal.stage ?? 'starter'}
+            onChange={(e) => void updateAnimalStage(animal.id, e.target.value as PigStage)}
+          >
+            <option value="starter">starter</option>
+            <option value="grower">grower</option>
+            <option value="finisher">finisher</option>
+          </select>
+        </p>
+      )}
+
       <h2>Log an event</h2>
-      <EventForm entityType="animal" entityId={animal.id} />
+      <EventForm
+        entityType="animal"
+        entityId={animal.id}
+        animalType={animal.type}
+        pigStage={animal.type === 'pig' ? animal.stage ?? null : null}
+      />
 
       <h2>History</h2>
       <ul>
-        {(events ?? []).map((event) => (
-          <li key={event.id}>
-            {event.event_date} — {event.event_type} {event.notes ? `— ${event.notes}` : ''}
-          </li>
-        ))}
+        {(events ?? []).map((event) => {
+          const feedDetail = formatFeedDetail(event);
+          return (
+            <li key={event.id}>
+              {event.event_date} — {event.event_type}
+              {feedDetail ? ` — ${feedDetail}` : ''}
+              {event.notes ? ` — ${event.notes}` : ''}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
