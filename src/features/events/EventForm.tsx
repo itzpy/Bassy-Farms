@@ -10,6 +10,10 @@ const BATCH_EVENT_TYPES: EventType[] = ['expense', 'sale', 'death'];
 
 const PLOT_EVENT_TYPES: EventType[] = ['planting', 'harvest', 'input_application', 'expense', 'sale'];
 
+// No screen uses entityType="farm" yet: FARM_EVENT_TYPES and the farm entries in
+// DEFAULT_EVENT_TYPE_BY_ENTITY below are an unused placeholder guess added only to
+// satisfy Record<EntityType, ...> completeness, not a verified requirement. Whoever
+// builds a farm-level events screen should revisit these rather than treat them as decided.
 const FARM_EVENT_TYPES: EventType[] = ['expense', 'sale'];
 
 const EVENT_TYPES_BY_ENTITY: Record<EntityType, EventType[]> = {
@@ -83,7 +87,7 @@ export function EventForm({
       if (productName.trim()) metadata.product_name = productName.trim();
       const parsedInputQuantity = Number(inputQuantity);
       if (inputQuantity.trim() && Number.isFinite(parsedInputQuantity) && parsedInputQuantity >= 0) {
-        metadata.quantity = parsedInputQuantity;
+        metadata.input_quantity = parsedInputQuantity;
         metadata.unit = inputUnit;
       }
     }

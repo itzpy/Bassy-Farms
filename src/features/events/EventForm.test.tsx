@@ -197,7 +197,7 @@ describe('EventForm', () => {
     expect(events[0].metadata).toMatchObject({
       input_type: 'insecticide',
       product_name: 'Roundup',
-      quantity: 2,
+      input_quantity: 2,
       unit: 'liters',
     });
   });
