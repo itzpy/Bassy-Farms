@@ -35,7 +35,10 @@ export function EventForm({
     if (!showFeedFields) return {};
     const metadata: Record<string, unknown> = {};
     if (feedType.trim()) metadata.feed_type = feedType.trim();
-    if (quantityKg.trim()) metadata.quantity_kg = Number(quantityKg);
+    const parsedQuantity = Number(quantityKg);
+    if (quantityKg.trim() && Number.isFinite(parsedQuantity) && parsedQuantity >= 0) {
+      metadata.quantity_kg = parsedQuantity;
+    }
     return metadata;
   }
 

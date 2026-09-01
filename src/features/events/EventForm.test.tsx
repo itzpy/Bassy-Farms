@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { db } from '../../lib/db';
+import { db, type LocalEvent } from '../../lib/db';
 import { EventForm } from './EventForm';
 
 describe('EventForm', () => {
@@ -61,5 +61,31 @@ describe('EventForm', () => {
     await user.selectOptions(screen.getByLabelText(/event/i), 'vaccination');
 
     expect(screen.queryByLabelText(/feed type/i)).not.toBeInTheDocument();
+  });
+
+  it('omits quantity_kg from metadata when a negative value is entered', async () => {
+    const user = userEvent.setup();
+    render(<EventForm entityType="animal" entityId="a5" animalType="goat" />);
+
+    await user.type(screen.getByLabelText(/feed type/i), 'Hay');
+    const qtyInput = screen.getByLabelText(/quantity/i) as HTMLInputElement;
+    await user.type(qtyInput, '-3');
+    expect(qtyInput.value).toBe('-3');
+
+    // The native `min="0"` constraint makes jsdom (like a real browser) block
+    // submission via a click on the submit button before React's onSubmit
+    // ever runs, so this dispatches the `submit` event directly to exercise
+    // handleSubmit -> buildMetadata()'s negative-value rejection.
+    const form = qtyInput.closest('form');
+    if (!form) throw new Error('form not found');
+    fireEvent.submit(form);
+
+    let events: LocalEvent[] = [];
+    await waitFor(async () => {
+      events = await db.events.where('entity_id').equals('a5').toArray();
+      expect(events).toHaveLength(1);
+    });
+    expect(events[0].metadata).toMatchObject({ feed_type: 'Hay' });
+    expect(events[0].metadata).not.toHaveProperty('quantity_kg');
   });
 });
