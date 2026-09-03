@@ -30,7 +30,7 @@ export default function App() {
           <div className="app-shell">
             <nav>
               <Link to="/animals">Animals</Link> <Link to="/batches">Batches</Link>{' '}
-              <Link to="/plots">Plots</Link>
+              <Link to="/plots">Plots</Link> <Link to="/farm">Farm</Link>
             </nav>
             <UnsyncedIndicator />
             <AppRoutes />
