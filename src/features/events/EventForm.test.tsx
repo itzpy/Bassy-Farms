@@ -210,4 +210,16 @@ describe('EventForm', () => {
 
     expect(screen.queryByLabelText(/input type/i)).not.toBeInTheDocument();
   });
+
+  it('accepts a null entityId for farm-wide events and stores entity_id as null', async () => {
+    const user = userEvent.setup();
+    render(<EventForm entityType="farm" entityId={null} />);
+
+    await user.type(screen.getByLabelText(/amount/i), '50');
+    await user.click(screen.getByRole('button', { name: /log event/i }));
+
+    const events = await db.events.where('entity_type').equals('farm').toArray();
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ entity_id: null, event_type: 'expense', amount: 50 });
+  });
 });
