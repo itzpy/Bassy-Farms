@@ -6,6 +6,7 @@ import { BatchDetail } from './features/batches/BatchDetail';
 import { PlotsList } from './features/plots/PlotsList';
 import { PlotDetail } from './features/plots/PlotDetail';
 import { FarmEvents } from './features/farm/FarmEvents';
+import { ProfitabilityDashboard } from './features/dashboard/ProfitabilityDashboard';
 
 export function AppRoutes() {
   return (
@@ -18,6 +19,7 @@ export function AppRoutes() {
       <Route path="/plots" element={<PlotsList />} />
       <Route path="/plots/:id" element={<PlotDetail />} />
       <Route path="/farm" element={<FarmEvents />} />
+      <Route path="/dashboard" element={<ProfitabilityDashboard />} />
     </Routes>
   );
 }
