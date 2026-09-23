@@ -55,6 +55,7 @@ export function EventForm({
   const [productName, setProductName] = useState('');
   const [inputQuantity, setInputQuantity] = useState('');
   const [inputUnit, setInputUnit] = useState<(typeof INPUT_UNITS)[number]>('liters');
+  const [nextDueDate, setNextDueDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,6 +63,7 @@ export function EventForm({
   const showAmountField = eventType === 'expense' || eventType === 'sale';
   const showBatchQuantityField = entityType === 'batch' && (eventType === 'sale' || eventType === 'death');
   const showInputFields = entityType === 'plot' && eventType === 'input_application';
+  const showVaccinationDueField = eventType === 'vaccination';
 
   function buildMetadata(): Record<string, unknown> {
     const metadata: Record<string, unknown> = {};
@@ -86,6 +88,9 @@ export function EventForm({
         metadata.input_quantity = parsedInputQuantity;
         metadata.unit = inputUnit;
       }
+    }
+    if (showVaccinationDueField && nextDueDate.trim()) {
+      metadata.next_due_date = nextDueDate;
     }
     return metadata;
   }
@@ -119,6 +124,7 @@ export function EventForm({
       setBatchQuantity('1');
       setProductName('');
       setInputQuantity('');
+      setNextDueDate('');
       onCreated?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to log event');
@@ -221,6 +227,18 @@ export function EventForm({
               <option key={unit} value={unit}>{unit}</option>
             ))}
           </select>
+        </>
+      )}
+
+      {showVaccinationDueField && (
+        <>
+          <label htmlFor="vaccination-due-date">Next due date</label>
+          <input
+            id="vaccination-due-date"
+            type="date"
+            value={nextDueDate}
+            onChange={(e) => setNextDueDate(e.target.value)}
+          />
         </>
       )}
 

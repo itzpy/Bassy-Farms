@@ -211,6 +211,37 @@ describe('EventForm', () => {
     expect(screen.queryByLabelText(/input type/i)).not.toBeInTheDocument();
   });
 
+  it('shows a next due date field only for vaccination events, and stores it as metadata.next_due_date', async () => {
+    const user = userEvent.setup();
+    render(<EventForm entityType="animal" entityId="a10" animalType="pig" pigStage="starter" />);
+
+    await user.selectOptions(screen.getByLabelText(/event/i), 'vaccination');
+    fireEvent.change(screen.getByLabelText(/next due date/i), { target: { value: '2026-12-01' } });
+    await user.click(screen.getByRole('button', { name: /log event/i }));
+
+    const events = await db.events.where('entity_id').equals('a10').toArray();
+    expect(events).toHaveLength(1);
+    expect(events[0].metadata).toMatchObject({ next_due_date: '2026-12-01' });
+  });
+
+  it('does not show a next due date field for a non-vaccination event', async () => {
+    render(<EventForm entityType="animal" entityId="a11" animalType="pig" pigStage="starter" />);
+
+    expect(screen.queryByLabelText(/next due date/i)).not.toBeInTheDocument();
+  });
+
+  it('omits next_due_date from metadata when left blank', async () => {
+    const user = userEvent.setup();
+    render(<EventForm entityType="animal" entityId="a12" animalType="pig" pigStage="starter" />);
+
+    await user.selectOptions(screen.getByLabelText(/event/i), 'vaccination');
+    await user.click(screen.getByRole('button', { name: /log event/i }));
+
+    const events = await db.events.where('entity_id').equals('a12').toArray();
+    expect(events).toHaveLength(1);
+    expect(events[0].metadata).not.toHaveProperty('next_due_date');
+  });
+
   it('accepts a null entityId for farm-wide events and stores entity_id as null', async () => {
     const user = userEvent.setup();
     render(<EventForm entityType="farm" entityId={null} />);
