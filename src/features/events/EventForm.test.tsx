@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { db, type LocalEvent } from '../../lib/db';
 import { EventForm } from './EventForm';
+import { createEvent } from './api';
 
 describe('EventForm', () => {
   beforeEach(async () => {
@@ -252,5 +253,69 @@ describe('EventForm', () => {
     const events = await db.events.where('entity_type').equals('farm').toArray();
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({ entity_id: null, event_type: 'expense', amount: 50 });
+  });
+
+  it('in edit mode, pre-fills all fields from the given event and saves via update, not create', async () => {
+    const id = await createEvent({
+      event_type: 'feeding', entity_type: 'animal', entity_id: 'a20',
+      event_date: '2026-01-10', amount: null, category: null, notes: 'first note',
+      metadata: { feed_type: 'starter', quantity_kg: 2 },
+    });
+    const stored = (await db.events.get(id))!;
+    const user = userEvent.setup();
+    let saved = false;
+    render(
+      <EventForm
+        entityType="animal"
+        entityId="a20"
+        animalType="pig"
+        editingEvent={stored}
+        onSaved={() => { saved = true; }}
+      />
+    );
+
+    expect(screen.getByLabelText(/event/i)).toHaveValue('feeding');
+    expect(screen.getByLabelText('Date')).toHaveValue('2026-01-10');
+    expect(screen.getByLabelText(/feed type/i)).toHaveValue('starter');
+    expect(screen.getByLabelText(/quantity/i)).toHaveValue(2);
+    expect(screen.getByLabelText(/notes/i)).toHaveValue('first note');
+    expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText(/notes/i));
+    await user.type(screen.getByLabelText(/notes/i), 'updated note');
+    await user.click(screen.getByRole('button', { name: /save changes/i }));
+
+    // fake-indexeddb macrotask-timing: the update's completion callback can
+    // resolve a tick after the click, so wait for it (see AnimalForm.test.tsx).
+    await waitFor(() => expect(saved).toBe(true));
+    const all = await db.events.where('entity_id').equals('a20').toArray();
+    expect(all).toHaveLength(1);
+    expect(all[0]).toMatchObject({ id, notes: 'updated note' });
+  });
+
+  it('Cancel in edit mode calls onCancel without saving', async () => {
+    const id = await createEvent({
+      event_type: 'expense', entity_type: 'farm', entity_id: null,
+      event_date: '2026-01-10', amount: 20, category: null, notes: null, metadata: {},
+    });
+    const stored = (await db.events.get(id))!;
+    const user = userEvent.setup();
+    let cancelled = false;
+    render(
+      <EventForm
+        entityType="farm"
+        entityId={null}
+        editingEvent={stored}
+        onCancel={() => { cancelled = true; }}
+      />
+    );
+
+    await user.clear(screen.getByLabelText(/amount/i));
+    await user.type(screen.getByLabelText(/amount/i), '999');
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+
+    expect(cancelled).toBe(true);
+    const after = (await db.events.get(id))!;
+    expect(after.amount).toBe(20);
   });
 });
