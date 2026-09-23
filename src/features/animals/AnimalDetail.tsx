@@ -1,8 +1,10 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type LocalEvent } from '../../lib/db';
 import type { PigStage } from '../../lib/types';
-import { updateAnimalStage } from './api';
+import { updateAnimalStage, deleteAnimal } from './api';
+import { AnimalForm } from './AnimalForm';
 import { EventForm } from '../events/EventForm';
 
 // `useLiveQuery` returns `undefined` both while the query is still pending AND
@@ -26,6 +28,8 @@ function formatVaccinationDetail(event: LocalEvent): string {
 
 export function AnimalDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [isEditing, setIsEditing] = useState(false);
 
   const result = useLiveQuery(() => (id ? db.animals.get(id) : undefined), [id], PENDING);
   const loading = result === PENDING;
@@ -46,33 +50,50 @@ export function AnimalDetail() {
   if (loading) return <p>Loading…</p>;
   if (!animal) return <p>Animal not found.</p>;
 
+  async function handleDelete() {
+    if (!window.confirm(`Delete ${animal!.tag}? This cannot be undone from the app.`)) return;
+    await deleteAnimal(animal!.id);
+    navigate('/animals');
+  }
+
   return (
     <div>
       <h1>{animal.tag} ({animal.type})</h1>
-      <p>Status: {animal.status}</p>
 
-      {animal.type === 'pig' && (
-        <p>
-          <label htmlFor="pig-stage">Stage</label>{' '}
-          <select
-            id="pig-stage"
-            value={animal.stage ?? 'starter'}
-            onChange={(e) => void updateAnimalStage(animal.id, e.target.value as PigStage)}
-          >
-            <option value="starter">starter</option>
-            <option value="grower">grower</option>
-            <option value="finisher">finisher</option>
-          </select>
-        </p>
+      {animal.deleted_at ? (
+        <p role="status">Deleted</p>
+      ) : isEditing ? (
+        <AnimalForm editing={animal} onSaved={() => setIsEditing(false)} />
+      ) : (
+        <>
+          <p>Status: {animal.status}</p>
+          <button type="button" onClick={() => setIsEditing(true)}>Edit animal</button>{' '}
+          <button type="button" onClick={handleDelete}>Delete animal</button>
+
+          {animal.type === 'pig' && (
+            <p>
+              <label htmlFor="pig-stage">Stage</label>{' '}
+              <select
+                id="pig-stage"
+                value={animal.stage ?? 'starter'}
+                onChange={(e) => void updateAnimalStage(animal.id, e.target.value as PigStage)}
+              >
+                <option value="starter">starter</option>
+                <option value="grower">grower</option>
+                <option value="finisher">finisher</option>
+              </select>
+            </p>
+          )}
+
+          <h2>Log an event</h2>
+          <EventForm
+            entityType="animal"
+            entityId={animal.id}
+            animalType={animal.type}
+            pigStage={animal.type === 'pig' ? animal.stage ?? null : null}
+          />
+        </>
       )}
-
-      <h2>Log an event</h2>
-      <EventForm
-        entityType="animal"
-        entityId={animal.id}
-        animalType={animal.type}
-        pigStage={animal.type === 'pig' ? animal.stage ?? null : null}
-      />
 
       <h2>History</h2>
       <ul>
