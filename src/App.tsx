@@ -5,6 +5,7 @@ import { ProtectedRoute } from './auth/ProtectedRoute';
 import { AppRoutes } from './routes';
 import { startSyncLoop } from './lib/sync';
 import { UnsyncedIndicator } from './components/UnsyncedIndicator';
+import { VaccinationReminders } from './features/reminders/VaccinationReminders';
 
 function SyncManager() {
   const { session } = useAuth();
@@ -34,6 +35,7 @@ export default function App() {
               <Link to="/dashboard">Dashboard</Link>
             </nav>
             <UnsyncedIndicator />
+            <VaccinationReminders />
             <AppRoutes />
           </div>
         </ProtectedRoute>
