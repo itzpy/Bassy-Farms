@@ -1,6 +1,9 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type LocalEvent } from '../../lib/db';
+import { deletePlot } from './api';
+import { PlotForm } from './PlotForm';
 import { EventForm } from '../events/EventForm';
 
 // See AnimalDetail.tsx for why this sentinel is needed: `useLiveQuery` returns
@@ -19,6 +22,8 @@ function formatInputDetail(event: LocalEvent): string {
 
 export function PlotDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [isEditing, setIsEditing] = useState(false);
 
   const result = useLiveQuery(() => (id ? db.plots.get(id) : undefined), [id], PENDING);
   const loading = result === PENDING;
@@ -40,21 +45,38 @@ export function PlotDetail() {
   if (loading) return <p>Loading…</p>;
   if (!plot) return <p>Plot not found.</p>;
 
+  async function handleDelete() {
+    if (!window.confirm(`Delete ${plot!.name}? This cannot be undone from the app.`)) return;
+    await deletePlot(plot!.id);
+    navigate('/plots');
+  }
+
   return (
     <div>
       <h1>{plot.name}</h1>
-      <p>
-        {[
-          plot.crop_type,
-          plot.planted_date ? `planted ${plot.planted_date}` : 'not yet planted',
-          plot.area != null ? `${plot.area} area` : null,
-        ]
-          .filter(Boolean)
-          .join(' — ')}
-      </p>
 
-      <h2>Log an event</h2>
-      <EventForm entityType="plot" entityId={plot.id} />
+      {plot.deleted_at ? (
+        <p role="status">Deleted</p>
+      ) : isEditing ? (
+        <PlotForm editing={plot} onSaved={() => setIsEditing(false)} />
+      ) : (
+        <>
+          <p>
+            {[
+              plot.crop_type,
+              plot.planted_date ? `planted ${plot.planted_date}` : 'not yet planted',
+              plot.area != null ? `${plot.area} area` : null,
+            ]
+              .filter(Boolean)
+              .join(' — ')}
+          </p>
+          <button type="button" onClick={() => setIsEditing(true)}>Edit plot</button>{' '}
+          <button type="button" onClick={handleDelete}>Delete plot</button>
+
+          <h2>Log an event</h2>
+          <EventForm entityType="plot" entityId={plot.id} />
+        </>
+      )}
 
       <h2>History</h2>
       <ul>
