@@ -50,4 +50,19 @@ describe('ProfitabilityDashboard', () => {
 
     expect(await screen.findByText(/Cost: 0\.00/)).toBeInTheDocument();
   });
+
+  it('excludes a deleted event from totals', async () => {
+    const today = new Date().toISOString().slice(0, 10);
+
+    await db.events.put({
+      id: 'e1', client_id: 'e1', event_type: 'expense', entity_type: 'farm', entity_id: null,
+      event_date: today, amount: 999, category: null, notes: null, metadata: {},
+      created_at: today + 'T00:00:00.000Z', updated_at: today + 'T00:00:00.000Z', synced: 0,
+      deleted_at: today + 'T01:00:00.000Z',
+    });
+
+    render(<ProfitabilityDashboard />);
+
+    expect(await screen.findByText(/Cost: 0\.00/)).toBeInTheDocument();
+  });
 });

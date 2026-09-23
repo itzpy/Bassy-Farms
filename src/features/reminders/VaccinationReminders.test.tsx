@@ -45,4 +45,23 @@ describe('VaccinationReminders', () => {
     const link = screen.getByRole('link', { name: /P-01/ });
     expect(link).toHaveAttribute('href', '/animals/a1');
   });
+
+  it('does not show a reminder for a deleted vaccination event', async () => {
+    await db.animals.put({
+      id: 'a1', type: 'pig', tag: 'P-01', birth_date: null, status: 'active', notes: null,
+      created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+    });
+    await db.events.put({
+      id: 'e1', client_id: 'e1', event_type: 'vaccination', entity_type: 'animal', entity_id: 'a1',
+      event_date: '2026-01-01', amount: null, category: null, notes: null,
+      metadata: { next_due_date: '2020-01-01' },
+      created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+      deleted_at: '2026-01-02T00:00:00.000Z',
+    });
+
+    renderWithRouter();
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
 });

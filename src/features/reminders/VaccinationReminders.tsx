@@ -4,8 +4,10 @@ import { db } from '../../lib/db';
 import { getDueVaccinations } from './dueVaccinations';
 
 export function VaccinationReminders() {
-  const events = useLiveQuery(() => db.events.where('event_type').equals('vaccination').toArray());
-  const animals = useLiveQuery(() => db.animals.toArray());
+  const events = useLiveQuery(() =>
+    db.events.where('event_type').equals('vaccination').and((e) => !e.deleted_at).toArray()
+  );
+  const animals = useLiveQuery(() => db.animals.filter((a) => !a.deleted_at).toArray());
 
   const today = new Date().toISOString().slice(0, 10);
   const due = getDueVaccinations(events ?? [], animals ?? [], today);
