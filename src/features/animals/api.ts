@@ -33,3 +33,12 @@ export async function updateAnimalStatus(id: string, status: AnimalStatus): Prom
 export async function updateAnimalStage(id: string, stage: PigStage): Promise<void> {
   await db.animals.update(id, { stage, updated_at: new Date().toISOString(), synced: 0 });
 }
+
+export async function updateAnimal(id: string, patch: Partial<NewAnimalInput>): Promise<void> {
+  await db.animals.update(id, { ...patch, updated_at: new Date().toISOString(), synced: 0 });
+}
+
+export async function deleteAnimal(id: string): Promise<void> {
+  const now = new Date().toISOString();
+  await db.animals.update(id, { deleted_at: now, updated_at: now, synced: 0 });
+}
