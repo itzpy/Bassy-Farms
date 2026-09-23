@@ -24,4 +24,21 @@ describe('BatchesList', () => {
 
     expect(await screen.findByText('Batch A')).toBeInTheDocument();
   });
+
+  it('does not show a deleted batch', async () => {
+    await db.batches.put({
+      id: 'b1', name: 'Deleted Batch', purchase_date: '2026-01-01', initial_count: 5, purchase_cost: null, notes: null,
+      created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+      deleted_at: '2026-01-02T00:00:00.000Z',
+    });
+
+    render(
+      <MemoryRouter>
+        <BatchesList />
+      </MemoryRouter>
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(screen.queryByText('Deleted Batch')).not.toBeInTheDocument();
+  });
 });

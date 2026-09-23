@@ -4,7 +4,10 @@ import { db } from '../../lib/db';
 import { PlotForm } from './PlotForm';
 
 export function PlotsList() {
-  const plots = useLiveQuery(() => db.plots.orderBy('name').toArray(), []);
+  const plots = useLiveQuery(
+    () => db.plots.orderBy('name').filter((p) => !p.deleted_at).toArray(),
+    []
+  );
 
   return (
     <div>
