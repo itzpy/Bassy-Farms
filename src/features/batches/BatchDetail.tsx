@@ -1,6 +1,9 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type LocalEvent } from '../../lib/db';
+import { deleteBatch } from './api';
+import { BatchForm } from './BatchForm';
 import { EventForm } from '../events/EventForm';
 
 // See AnimalDetail.tsx for why this sentinel is needed: `useLiveQuery` returns
@@ -24,6 +27,8 @@ function formatBatchDetail(event: LocalEvent): string {
 
 export function BatchDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [isEditing, setIsEditing] = useState(false);
 
   const result = useLiveQuery(() => (id ? db.batches.get(id) : undefined), [id], PENDING);
   const loading = result === PENDING;
@@ -62,17 +67,34 @@ export function BatchDetail() {
   const totalCost = (batch.purchase_cost ?? 0) + totalExpense;
   const profit = totalRevenue - totalCost;
 
+  async function handleDelete() {
+    if (!window.confirm(`Delete ${batch!.name}? This cannot be undone from the app.`)) return;
+    await deleteBatch(batch!.id);
+    navigate('/batches');
+  }
+
   return (
     <div>
       <h1>{batch.name}</h1>
-      <p>Purchased: {batch.purchase_date} — {batch.initial_count} pigs</p>
-      <p>Current headcount: {currentCount}</p>
-      <p>Total cost: {totalCost.toFixed(2)}</p>
-      <p>Total revenue: {totalRevenue.toFixed(2)}</p>
-      <p>Profit: {profit.toFixed(2)}</p>
 
-      <h2>Log an event</h2>
-      <EventForm entityType="batch" entityId={batch.id} />
+      {batch.deleted_at ? (
+        <p role="status">Deleted</p>
+      ) : isEditing ? (
+        <BatchForm editing={batch} onSaved={() => setIsEditing(false)} />
+      ) : (
+        <>
+          <p>Purchased: {batch.purchase_date} — {batch.initial_count} pigs</p>
+          <p>Current headcount: {currentCount}</p>
+          <p>Total cost: {totalCost.toFixed(2)}</p>
+          <p>Total revenue: {totalRevenue.toFixed(2)}</p>
+          <p>Profit: {profit.toFixed(2)}</p>
+          <button type="button" onClick={() => setIsEditing(true)}>Edit batch</button>{' '}
+          <button type="button" onClick={handleDelete}>Delete batch</button>
+
+          <h2>Log an event</h2>
+          <EventForm entityType="batch" entityId={batch.id} />
+        </>
+      )}
 
       <h2>History</h2>
       <ul>

@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { db } from '../../lib/db';
 import { BatchDetail } from './BatchDetail';
@@ -83,5 +84,60 @@ describe('BatchDetail', () => {
     expect(screen.getByText(/total revenue: 300/i)).toBeInTheDocument();
     expect(screen.getByText(/profit: -300/i)).toBeInTheDocument();
     expect(screen.getByText(/3 pigs/)).toBeInTheDocument();
+  });
+
+  it('shows Edit batch / Delete batch buttons, and Edit swaps in the edit form', async () => {
+    await db.batches.put({
+      id: 'b7', name: 'Edit Batch', purchase_date: '2026-01-01', initial_count: 10, purchase_cost: 500, notes: null,
+      created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+    });
+
+    const user = userEvent.setup();
+    renderAt('b7');
+    await screen.findByText(/Edit Batch/);
+
+    await user.click(screen.getByRole('button', { name: /edit batch/i }));
+
+    expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
+  });
+
+  it('Delete batch, once confirmed, marks the batch deleted and navigates to the list', async () => {
+    await db.batches.put({
+      id: 'b8', name: 'Delete Batch', purchase_date: '2026-01-01', initial_count: 10, purchase_cost: 500, notes: null,
+      created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+    });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/batches/b8']}>
+        <Routes>
+          <Route path="/batches/:id" element={<BatchDetail />} />
+          <Route path="/batches" element={<p>Batches list</p>} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await screen.findByText(/Delete Batch/);
+
+    await user.click(screen.getByRole('button', { name: /delete batch/i }));
+
+    expect(await screen.findByText(/Batches list/)).toBeInTheDocument();
+    const stored = await db.batches.get('b8');
+    expect(stored!.deleted_at).toBeTruthy();
+  });
+
+  it('shows a Deleted notice and no Edit/Delete/log-event controls for a deleted batch', async () => {
+    await db.batches.put({
+      id: 'b9', name: 'Gone Batch', purchase_date: '2026-01-01', initial_count: 10, purchase_cost: 500, notes: null,
+      created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+      deleted_at: '2026-02-01T00:00:00.000Z',
+    });
+
+    renderAt('b9');
+
+    expect(await screen.findByText(/deleted/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /edit batch/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /delete batch/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /log event/i })).not.toBeInTheDocument();
   });
 });
