@@ -24,3 +24,12 @@ export async function createPlot(input: NewPlotInput): Promise<string> {
   });
   return id;
 }
+
+export async function updatePlot(id: string, patch: Partial<NewPlotInput>): Promise<void> {
+  await db.plots.update(id, { ...patch, updated_at: new Date().toISOString(), synced: 0 });
+}
+
+export async function deletePlot(id: string): Promise<void> {
+  const now = new Date().toISOString();
+  await db.plots.update(id, { deleted_at: now, updated_at: now, synced: 0 });
+}
