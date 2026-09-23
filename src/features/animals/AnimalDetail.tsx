@@ -18,6 +18,12 @@ function formatFeedDetail(event: LocalEvent): string {
   return [feedType, quantity != null ? `${quantity}kg` : null].filter(Boolean).join(', ');
 }
 
+function formatVaccinationDetail(event: LocalEvent): string {
+  if (event.event_type !== 'vaccination') return '';
+  const dueDate = typeof event.metadata.next_due_date === 'string' ? event.metadata.next_due_date : null;
+  return dueDate ? `next due ${dueDate}` : '';
+}
+
 export function AnimalDetail() {
   const { id } = useParams<{ id: string }>();
 
@@ -72,10 +78,12 @@ export function AnimalDetail() {
       <ul>
         {(events ?? []).map((event) => {
           const feedDetail = formatFeedDetail(event);
+          const vaccinationDetail = formatVaccinationDetail(event);
           return (
             <li key={event.id}>
               {event.event_date} — {event.event_type}
               {feedDetail ? ` — ${feedDetail}` : ''}
+              {vaccinationDetail ? ` — ${vaccinationDetail}` : ''}
               {event.notes ? ` — ${event.notes}` : ''}
             </li>
           );

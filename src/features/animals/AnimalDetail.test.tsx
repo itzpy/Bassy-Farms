@@ -118,4 +118,38 @@ describe('AnimalDetail', () => {
 
     expect(await screen.findByText(/starter, 3kg/)).toBeInTheDocument();
   });
+
+  it('shows next due date in the history line for a vaccination event with metadata', async () => {
+    await db.animals.put({
+      id: 'a5', type: 'goat', tag: 'G-05', birth_date: null, status: 'active', notes: null,
+      created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+    });
+    await db.events.put({
+      id: 'e1', client_id: 'e1', event_type: 'vaccination', entity_type: 'animal', entity_id: 'a5',
+      event_date: '2026-01-05', amount: null, category: null, notes: null,
+      metadata: { next_due_date: '2026-07-05' },
+      created_at: '2026-01-05T00:00:00.000Z', updated_at: '2026-01-05T00:00:00.000Z', synced: 0,
+    });
+
+    renderAt('a5');
+
+    expect(await screen.findByText(/next due 2026-07-05/)).toBeInTheDocument();
+  });
+
+  it('does not show a next-due suffix for a vaccination event without metadata', async () => {
+    await db.animals.put({
+      id: 'a6', type: 'goat', tag: 'G-06', birth_date: null, status: 'active', notes: null,
+      created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+    });
+    await db.events.put({
+      id: 'e1', client_id: 'e1', event_type: 'vaccination', entity_type: 'animal', entity_id: 'a6',
+      event_date: '2026-01-05', amount: null, category: null, notes: null, metadata: {},
+      created_at: '2026-01-05T00:00:00.000Z', updated_at: '2026-01-05T00:00:00.000Z', synced: 0,
+    });
+
+    renderAt('a6');
+
+    expect(await screen.findByText(/vaccination/)).toBeInTheDocument();
+    expect(screen.queryByText(/next due/)).not.toBeInTheDocument();
+  });
 });
