@@ -2309,7 +2309,7 @@ Add inside the existing `describe('AnimalDetail', ...)` block in
     renderAt('a21');
 
     expect(await screen.findByRole('button', { name: /^edit$/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^delete$/i })).toBeInTheDocument();
   });
 ```
 
@@ -2421,7 +2421,7 @@ Add inside the existing `describe('PlotDetail', ...)` block in
     renderAt('p21');
 
     expect(await screen.findByRole('button', { name: /^edit$/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^delete$/i })).toBeInTheDocument();
   });
 ```
 
@@ -2527,7 +2527,7 @@ Add inside the existing `describe('BatchDetail', ...)` block in
     renderAt('b21');
 
     expect(await screen.findByRole('button', { name: /^edit$/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^delete$/i })).toBeInTheDocument();
   });
 ```
 
