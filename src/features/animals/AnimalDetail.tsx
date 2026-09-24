@@ -6,6 +6,7 @@ import type { PigStage } from '../../lib/types';
 import { updateAnimalStage, deleteAnimal } from './api';
 import { AnimalForm } from './AnimalForm';
 import { EventForm } from '../events/EventForm';
+import { EventHistoryList } from '../events/EventHistoryList';
 
 // `useLiveQuery` returns `undefined` both while the query is still pending AND
 // once it has genuinely resolved to "no such row." Passing this sentinel as
@@ -40,7 +41,7 @@ export function AnimalDetail() {
         ? db.events
             .where('entity_id')
             .equals(id)
-            .and((e) => e.entity_type === 'animal')
+            .and((e) => e.entity_type === 'animal' && !e.deleted_at)
             .reverse()
             .sortBy('event_date')
         : [],
@@ -96,20 +97,14 @@ export function AnimalDetail() {
       )}
 
       <h2>History</h2>
-      <ul>
-        {(events ?? []).map((event) => {
-          const feedDetail = formatFeedDetail(event);
-          const vaccinationDetail = formatVaccinationDetail(event);
-          return (
-            <li key={event.id}>
-              {event.event_date} — {event.event_type}
-              {feedDetail ? ` — ${feedDetail}` : ''}
-              {vaccinationDetail ? ` — ${vaccinationDetail}` : ''}
-              {event.notes ? ` — ${event.notes}` : ''}
-            </li>
-          );
-        })}
-      </ul>
+      <EventHistoryList
+        events={events ?? []}
+        entityType="animal"
+        entityId={animal.id}
+        animalType={animal.type}
+        pigStage={animal.type === 'pig' ? animal.stage ?? null : null}
+        formatDetail={(event) => formatFeedDetail(event) || formatVaccinationDetail(event)}
+      />
     </div>
   );
 }
