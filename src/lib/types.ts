@@ -12,6 +12,7 @@ export interface Animal {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  deleted_at?: string | null;
 }
 
 export interface Plot {
@@ -23,6 +24,7 @@ export interface Plot {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  deleted_at?: string | null;
 }
 
 export interface Batch {
@@ -34,6 +36,7 @@ export interface Batch {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  deleted_at?: string | null;
 }
 
 export type EventType =
@@ -64,4 +67,5 @@ export interface FarmEvent {
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+  deleted_at?: string | null;
 }

@@ -1,11 +1,20 @@
 import { useState, type FormEvent } from 'react';
-import { createPlot } from './api';
+import type { Plot } from '../../lib/types';
+import { createPlot, updatePlot } from './api';
 
-export function PlotForm({ onCreated }: { onCreated?: (id: string) => void }) {
-  const [name, setName] = useState('');
-  const [cropType, setCropType] = useState('');
-  const [plantedDate, setPlantedDate] = useState('');
-  const [area, setArea] = useState('');
+export function PlotForm({
+  editing,
+  onCreated,
+  onSaved,
+}: {
+  editing?: Plot;
+  onCreated?: (id: string) => void;
+  onSaved?: () => void;
+}) {
+  const [name, setName] = useState(editing?.name ?? '');
+  const [cropType, setCropType] = useState(editing?.crop_type ?? '');
+  const [plantedDate, setPlantedDate] = useState(editing?.planted_date ?? '');
+  const [area, setArea] = useState(editing?.area != null ? String(editing.area) : '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
@@ -15,18 +24,29 @@ export function PlotForm({ onCreated }: { onCreated?: (id: string) => void }) {
     setIsSubmitting(true);
     try {
       const parsedArea = area.trim() ? Number(area) : null;
-      const id = await createPlot({
-        name: name.trim(),
-        crop_type: cropType.trim() || null,
-        planted_date: plantedDate || null,
-        area: parsedArea != null && Number.isFinite(parsedArea) && parsedArea >= 0 ? parsedArea : null,
-        notes: null,
-      });
-      setName('');
-      setCropType('');
-      setPlantedDate('');
-      setArea('');
-      onCreated?.(id);
+      const validArea = parsedArea != null && Number.isFinite(parsedArea) && parsedArea >= 0 ? parsedArea : null;
+      if (editing) {
+        await updatePlot(editing.id, {
+          name: name.trim(),
+          crop_type: cropType.trim() || null,
+          planted_date: plantedDate || null,
+          area: validArea,
+        });
+        onSaved?.();
+      } else {
+        const id = await createPlot({
+          name: name.trim(),
+          crop_type: cropType.trim() || null,
+          planted_date: plantedDate || null,
+          area: validArea,
+          notes: null,
+        });
+        setName('');
+        setCropType('');
+        setPlantedDate('');
+        setArea('');
+        onCreated?.(id);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -51,7 +71,12 @@ export function PlotForm({ onCreated }: { onCreated?: (id: string) => void }) {
       <label htmlFor="plot-area">Area</label>
       <input id="plot-area" type="number" min="0" step="0.01" value={area} onChange={(e) => setArea(e.target.value)} />
 
-      <button type="submit" disabled={isSubmitting}>Add plot</button>
+      <button type="submit" disabled={isSubmitting}>{editing ? 'Save changes' : 'Add plot'}</button>
+      {editing && (
+        <button type="button" onClick={() => onSaved?.()}>
+          Cancel
+        </button>
+      )}
     </form>
   );
 }

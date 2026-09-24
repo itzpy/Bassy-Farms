@@ -4,7 +4,10 @@ import { db } from '../../lib/db';
 import { BatchForm } from './BatchForm';
 
 export function BatchesList() {
-  const batches = useLiveQuery(() => db.batches.orderBy('purchase_date').reverse().toArray(), []);
+  const batches = useLiveQuery(
+    () => db.batches.orderBy('purchase_date').reverse().filter((b) => !b.deleted_at).toArray(),
+    []
+  );
 
   return (
     <div>

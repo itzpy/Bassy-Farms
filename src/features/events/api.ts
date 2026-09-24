@@ -32,3 +32,12 @@ export async function createEvent(input: NewEventInput): Promise<string> {
   });
   return id;
 }
+
+export async function updateEvent(id: string, patch: Partial<NewEventInput>): Promise<void> {
+  await db.events.update(id, { ...patch, updated_at: new Date().toISOString(), synced: 0 });
+}
+
+export async function deleteEvent(id: string): Promise<void> {
+  const now = new Date().toISOString();
+  await db.events.update(id, { deleted_at: now, updated_at: now, synced: 0 });
+}

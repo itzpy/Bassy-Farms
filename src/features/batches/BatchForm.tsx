@@ -1,11 +1,24 @@
 import { useState, type FormEvent } from 'react';
-import { createBatch } from './api';
+import type { Batch } from '../../lib/types';
+import { createBatch, updateBatch } from './api';
 
-export function BatchForm({ onCreated }: { onCreated?: (id: string) => void }) {
-  const [name, setName] = useState('');
-  const [purchaseDate, setPurchaseDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [initialCount, setInitialCount] = useState('');
-  const [purchaseCost, setPurchaseCost] = useState('');
+export function BatchForm({
+  editing,
+  onCreated,
+  onSaved,
+}: {
+  editing?: Batch;
+  onCreated?: (id: string) => void;
+  onSaved?: () => void;
+}) {
+  const [name, setName] = useState(editing?.name ?? '');
+  const [purchaseDate, setPurchaseDate] = useState(
+    () => editing?.purchase_date ?? new Date().toISOString().slice(0, 10)
+  );
+  const [initialCount, setInitialCount] = useState(editing ? String(editing.initial_count) : '');
+  const [purchaseCost, setPurchaseCost] = useState(
+    editing?.purchase_cost != null ? String(editing.purchase_cost) : ''
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
@@ -17,17 +30,27 @@ export function BatchForm({ onCreated }: { onCreated?: (id: string) => void }) {
     try {
       const parsedCost = purchaseCost.trim() ? Number(purchaseCost) : null;
       const cost = parsedCost != null && Number.isFinite(parsedCost) && parsedCost >= 0 ? parsedCost : null;
-      const id = await createBatch({
-        name: name.trim(),
-        purchase_date: purchaseDate,
-        initial_count: count,
-        purchase_cost: cost,
-        notes: null,
-      });
-      setName('');
-      setInitialCount('');
-      setPurchaseCost('');
-      onCreated?.(id);
+      if (editing) {
+        await updateBatch(editing.id, {
+          name: name.trim(),
+          purchase_date: purchaseDate,
+          initial_count: count,
+          purchase_cost: cost,
+        });
+        onSaved?.();
+      } else {
+        const id = await createBatch({
+          name: name.trim(),
+          purchase_date: purchaseDate,
+          initial_count: count,
+          purchase_cost: cost,
+          notes: null,
+        });
+        setName('');
+        setInitialCount('');
+        setPurchaseCost('');
+        onCreated?.(id);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -66,7 +89,12 @@ export function BatchForm({ onCreated }: { onCreated?: (id: string) => void }) {
         onChange={(e) => setPurchaseCost(e.target.value)}
       />
 
-      <button type="submit" disabled={isSubmitting}>Add batch</button>
+      <button type="submit" disabled={isSubmitting}>{editing ? 'Save changes' : 'Add batch'}</button>
+      {editing && (
+        <button type="button" onClick={() => onSaved?.()}>
+          Cancel
+        </button>
+      )}
     </form>
   );
 }

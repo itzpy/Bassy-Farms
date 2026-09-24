@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import type { AnimalType, EntityType, EventType, PigStage } from '../../lib/types';
-import { createEvent } from './api';
+import type { LocalEvent } from '../../lib/db';
+import { createEvent, updateEvent } from './api';
 
 const ANIMAL_EVENT_TYPES: EventType[] = [
   'feeding', 'vaccination', 'weight', 'health_check', 'breeding', 'death', 'expense', 'sale',
@@ -35,27 +36,62 @@ export function EventForm({
   entityId,
   animalType,
   pigStage,
+  editingEvent,
   onCreated,
+  onSaved,
+  onCancel,
 }: {
   entityType: EntityType;
   entityId: string | null;
   animalType?: AnimalType;
   pigStage?: PigStage | null;
+  editingEvent?: LocalEvent | null;
   onCreated?: () => void;
+  onSaved?: () => void;
+  onCancel?: () => void;
 }) {
   const eventTypeOptions = EVENT_TYPES_BY_ENTITY[entityType];
-  const [eventType, setEventType] = useState<EventType>(DEFAULT_EVENT_TYPE_BY_ENTITY[entityType]);
-  const [eventDate, setEventDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [notes, setNotes] = useState('');
-  const [feedType, setFeedType] = useState(() => (animalType === 'pig' ? pigStage ?? 'starter' : ''));
-  const [quantityKg, setQuantityKg] = useState('');
-  const [batchQuantity, setBatchQuantity] = useState('1');
-  const [amount, setAmount] = useState('');
-  const [inputType, setInputType] = useState<(typeof INPUT_TYPES)[number]>('insecticide');
-  const [productName, setProductName] = useState('');
-  const [inputQuantity, setInputQuantity] = useState('');
-  const [inputUnit, setInputUnit] = useState<(typeof INPUT_UNITS)[number]>('liters');
-  const [nextDueDate, setNextDueDate] = useState('');
+  const [eventType, setEventType] = useState<EventType>(
+    () => editingEvent?.event_type ?? DEFAULT_EVENT_TYPE_BY_ENTITY[entityType]
+  );
+  const [eventDate, setEventDate] = useState(
+    () => editingEvent?.event_date ?? new Date().toISOString().slice(0, 10)
+  );
+  const [notes, setNotes] = useState(() => editingEvent?.notes ?? '');
+  const [feedType, setFeedType] = useState(() => {
+    if (typeof editingEvent?.metadata.feed_type === 'string') return editingEvent.metadata.feed_type;
+    return animalType === 'pig' ? pigStage ?? 'starter' : '';
+  });
+  const [quantityKg, setQuantityKg] = useState(() =>
+    typeof editingEvent?.metadata.quantity_kg === 'number' ? String(editingEvent.metadata.quantity_kg) : ''
+  );
+  const [batchQuantity, setBatchQuantity] = useState(() =>
+    typeof editingEvent?.metadata.quantity === 'number' ? String(editingEvent.metadata.quantity) : '1'
+  );
+  const [amount, setAmount] = useState(() =>
+    typeof editingEvent?.amount === 'number' ? String(editingEvent.amount) : ''
+  );
+  const [inputType, setInputType] = useState<(typeof INPUT_TYPES)[number]>(() => {
+    const value = editingEvent?.metadata.input_type;
+    return typeof value === 'string' && (INPUT_TYPES as readonly string[]).includes(value)
+      ? (value as (typeof INPUT_TYPES)[number])
+      : 'insecticide';
+  });
+  const [productName, setProductName] = useState(() =>
+    typeof editingEvent?.metadata.product_name === 'string' ? editingEvent.metadata.product_name : ''
+  );
+  const [inputQuantity, setInputQuantity] = useState(() =>
+    typeof editingEvent?.metadata.input_quantity === 'number' ? String(editingEvent.metadata.input_quantity) : ''
+  );
+  const [inputUnit, setInputUnit] = useState<(typeof INPUT_UNITS)[number]>(() => {
+    const value = editingEvent?.metadata.unit;
+    return typeof value === 'string' && (INPUT_UNITS as readonly string[]).includes(value)
+      ? (value as (typeof INPUT_UNITS)[number])
+      : 'liters';
+  });
+  const [nextDueDate, setNextDueDate] = useState(() =>
+    typeof editingEvent?.metadata.next_due_date === 'string' ? editingEvent.metadata.next_due_date : ''
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -108,24 +144,36 @@ export function EventForm({
     setIsSubmitting(true);
     setError(null);
     try {
-      await createEvent({
-        event_type: eventType,
-        entity_type: entityType,
-        entity_id: entityId,
-        event_date: eventDate,
-        amount: buildAmount(),
-        category: null,
-        notes: notes.trim() || null,
-        metadata: buildMetadata(),
-      });
-      setNotes('');
-      setQuantityKg('');
-      setAmount('');
-      setBatchQuantity('1');
-      setProductName('');
-      setInputQuantity('');
-      setNextDueDate('');
-      onCreated?.();
+      if (editingEvent) {
+        await updateEvent(editingEvent.id, {
+          event_type: eventType,
+          event_date: eventDate,
+          amount: buildAmount(),
+          category: null,
+          notes: notes.trim() || null,
+          metadata: buildMetadata(),
+        });
+        onSaved?.();
+      } else {
+        await createEvent({
+          event_type: eventType,
+          entity_type: entityType,
+          entity_id: entityId,
+          event_date: eventDate,
+          amount: buildAmount(),
+          category: null,
+          notes: notes.trim() || null,
+          metadata: buildMetadata(),
+        });
+        setNotes('');
+        setQuantityKg('');
+        setAmount('');
+        setBatchQuantity('1');
+        setProductName('');
+        setInputQuantity('');
+        setNextDueDate('');
+        onCreated?.();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to log event');
     } finally {
@@ -261,7 +309,12 @@ export function EventForm({
 
       {error && <p role="alert">{error}</p>}
 
-      <button type="submit" disabled={isSubmitting}>Log event</button>
+      <button type="submit" disabled={isSubmitting}>{editingEvent ? 'Save changes' : 'Log event'}</button>
+      {editingEvent && (
+        <button type="button" onClick={() => onCancel?.()}>
+          Cancel
+        </button>
+      )}
     </form>
   );
 }

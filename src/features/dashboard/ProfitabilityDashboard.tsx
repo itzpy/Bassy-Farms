@@ -17,11 +17,16 @@ export function ProfitabilityDashboard() {
   const [to, setTo] = useState(today);
 
   const events = useLiveQuery(
-    () => db.events.where('event_date').between(from, to, true, true).toArray(),
+    () =>
+      db.events
+        .where('event_date')
+        .between(from, to, true, true)
+        .and((e) => !e.deleted_at)
+        .toArray(),
     [from, to]
   );
-  const animals = useLiveQuery(() => db.animals.toArray(), []);
-  const batches = useLiveQuery(() => db.batches.toArray(), []);
+  const animals = useLiveQuery(() => db.animals.filter((a) => !a.deleted_at).toArray(), []);
+  const batches = useLiveQuery(() => db.batches.filter((b) => !b.deleted_at).toArray(), []);
 
   const { buckets, overall } = aggregateProfitability(events ?? [], animals ?? [], batches ?? [], from, to);
 

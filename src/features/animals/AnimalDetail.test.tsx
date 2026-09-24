@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { db } from '../../lib/db';
 import { AnimalDetail } from './AnimalDetail';
@@ -151,5 +152,112 @@ describe('AnimalDetail', () => {
 
     expect(await screen.findByText(/vaccination/)).toBeInTheDocument();
     expect(screen.queryByText(/next due/)).not.toBeInTheDocument();
+  });
+
+  it('shows Edit animal / Delete animal buttons, and Edit swaps in the edit form', async () => {
+    await db.animals.put({
+      id: 'a7', type: 'pig', tag: 'P-07', birth_date: null, status: 'active', notes: null,
+      created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+    });
+
+    const user = userEvent.setup();
+    renderAt('a7');
+    await screen.findByText(/P-07/);
+
+    await user.click(screen.getByRole('button', { name: /edit animal/i }));
+
+    expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
+  });
+
+  it('Delete animal asks for confirmation, and does nothing if declined', async () => {
+    await db.animals.put({
+      id: 'a8', type: 'pig', tag: 'P-08', birth_date: null, status: 'active', notes: null,
+      created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+    });
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    const user = userEvent.setup();
+    renderAt('a8');
+    await screen.findByText(/P-08/);
+
+    await user.click(screen.getByRole('button', { name: /delete animal/i }));
+
+    const stored = await db.animals.get('a8');
+    expect(stored!.deleted_at).toBeFalsy();
+  });
+
+  it('Delete animal, once confirmed, marks the animal deleted and navigates to the list', async () => {
+    await db.animals.put({
+      id: 'a9', type: 'pig', tag: 'P-09', birth_date: null, status: 'active', notes: null,
+      created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+    });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/animals/a9']}>
+        <Routes>
+          <Route path="/animals/:id" element={<AnimalDetail />} />
+          <Route path="/animals" element={<p>Animals list</p>} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await screen.findByText(/P-09/);
+
+    await user.click(screen.getByRole('button', { name: /delete animal/i }));
+
+    expect(await screen.findByText(/Animals list/)).toBeInTheDocument();
+    const stored = await db.animals.get('a9');
+    expect(stored!.deleted_at).toBeTruthy();
+  });
+
+  it('shows a Deleted notice and no Edit/Delete/log-event controls for a deleted animal', async () => {
+    await db.animals.put({
+      id: 'a10', type: 'pig', tag: 'P-10', birth_date: null, status: 'active', notes: null,
+      created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+      deleted_at: '2026-02-01T00:00:00.000Z',
+    });
+
+    renderAt('a10');
+
+    expect(await screen.findByText(/deleted/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /edit animal/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /delete animal/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /log event/i })).not.toBeInTheDocument();
+  });
+
+  it('a deleted event does not appear in the history list', async () => {
+    await db.animals.put({
+      id: 'a20', type: 'pig', tag: 'P-20', birth_date: null, status: 'active', notes: null,
+      created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+    });
+    await db.events.put({
+      id: 'e1', client_id: 'e1', event_type: 'feeding', entity_type: 'animal', entity_id: 'a20',
+      event_date: '2026-01-05', amount: null, category: null, notes: 'gone', metadata: {},
+      created_at: '2026-01-05T00:00:00.000Z', updated_at: '2026-01-05T00:00:00.000Z', synced: 0,
+      deleted_at: '2026-01-06T00:00:00.000Z',
+    });
+
+    renderAt('a20');
+
+    await screen.findByText(/P-20/);
+    expect(screen.queryByText(/gone/)).not.toBeInTheDocument();
+  });
+
+  it('history rows offer Edit and Delete controls', async () => {
+    await db.animals.put({
+      id: 'a21', type: 'pig', tag: 'P-21', birth_date: null, status: 'active', notes: null,
+      created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+    });
+    await db.events.put({
+      id: 'e1', client_id: 'e1', event_type: 'feeding', entity_type: 'animal', entity_id: 'a21',
+      event_date: '2026-01-05', amount: null, category: null, notes: null, metadata: {},
+      created_at: '2026-01-05T00:00:00.000Z', updated_at: '2026-01-05T00:00:00.000Z', synced: 0,
+    });
+
+    renderAt('a21');
+
+    expect(await screen.findByRole('button', { name: /^edit$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^delete$/i })).toBeInTheDocument();
   });
 });

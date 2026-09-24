@@ -4,7 +4,10 @@ import { db } from '../../lib/db';
 import { AnimalForm } from './AnimalForm';
 
 export function AnimalsList() {
-  const animals = useLiveQuery(() => db.animals.orderBy('tag').toArray(), []);
+  const animals = useLiveQuery(
+    () => db.animals.orderBy('tag').filter((a) => !a.deleted_at).toArray(),
+    []
+  );
 
   return (
     <div>

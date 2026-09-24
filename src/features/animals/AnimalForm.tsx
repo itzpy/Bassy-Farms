@@ -1,10 +1,18 @@
 import { useState, type FormEvent } from 'react';
-import type { AnimalType } from '../../lib/types';
-import { createAnimal } from './api';
+import type { Animal, AnimalType } from '../../lib/types';
+import { createAnimal, updateAnimal } from './api';
 
-export function AnimalForm({ onCreated }: { onCreated?: (id: string) => void }) {
-  const [type, setType] = useState<AnimalType>('pig');
-  const [tag, setTag] = useState('');
+export function AnimalForm({
+  editing,
+  onCreated,
+  onSaved,
+}: {
+  editing?: Animal;
+  onCreated?: (id: string) => void;
+  onSaved?: () => void;
+}) {
+  const [type, setType] = useState<AnimalType>(editing?.type ?? 'pig');
+  const [tag, setTag] = useState(editing?.tag ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
@@ -13,9 +21,14 @@ export function AnimalForm({ onCreated }: { onCreated?: (id: string) => void }) 
     if (!tag.trim()) return;
     setIsSubmitting(true);
     try {
-      const id = await createAnimal({ type, tag: tag.trim(), birth_date: null, notes: null });
-      setTag('');
-      onCreated?.(id);
+      if (editing) {
+        await updateAnimal(editing.id, { type, tag: tag.trim() });
+        onSaved?.();
+      } else {
+        const id = await createAnimal({ type, tag: tag.trim(), birth_date: null, notes: null });
+        setTag('');
+        onCreated?.(id);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -32,7 +45,12 @@ export function AnimalForm({ onCreated }: { onCreated?: (id: string) => void }) 
       <label htmlFor="animal-tag">Tag</label>
       <input id="animal-tag" value={tag} onChange={(e) => setTag(e.target.value)} />
 
-      <button type="submit" disabled={isSubmitting}>Add animal</button>
+      <button type="submit" disabled={isSubmitting}>{editing ? 'Save changes' : 'Add animal'}</button>
+      {editing && (
+        <button type="button" onClick={() => onSaved?.()}>
+          Cancel
+        </button>
+      )}
     </form>
   );
 }
