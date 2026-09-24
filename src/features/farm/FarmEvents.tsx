@@ -1,10 +1,17 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../lib/db';
 import { EventForm } from '../events/EventForm';
+import { EventHistoryList } from '../events/EventHistoryList';
 
 export function FarmEvents() {
   const events = useLiveQuery(
-    () => db.events.where('entity_type').equals('farm').reverse().sortBy('event_date'),
+    () =>
+      db.events
+        .where('entity_type')
+        .equals('farm')
+        .and((e) => !e.deleted_at)
+        .reverse()
+        .sortBy('event_date'),
     []
   );
 
@@ -16,15 +23,7 @@ export function FarmEvents() {
       <EventForm entityType="farm" entityId={null} />
 
       <h2>History</h2>
-      <ul>
-        {(events ?? []).map((event) => (
-          <li key={event.id}>
-            {event.event_date} — {event.event_type}
-            {event.amount != null ? ` — ${event.amount.toFixed(2)}` : ''}
-            {event.notes ? ` — ${event.notes}` : ''}
-          </li>
-        ))}
-      </ul>
+      <EventHistoryList events={events ?? []} entityType="farm" entityId={null} />
     </div>
   );
 }

@@ -41,4 +41,31 @@ describe('FarmEvents', () => {
 
     expect(screen.queryByText(/Plot expense/)).not.toBeInTheDocument();
   });
+
+  it('a deleted event does not appear in the history list', async () => {
+    await db.events.put({
+      id: 'e1', client_id: 'e1', event_type: 'expense', entity_type: 'farm', entity_id: null,
+      event_date: '2026-01-05', amount: 40, category: null, notes: 'gone', metadata: {},
+      created_at: '2026-01-05T00:00:00.000Z', updated_at: '2026-01-05T00:00:00.000Z', synced: 0,
+      deleted_at: '2026-01-06T00:00:00.000Z',
+    });
+
+    render(<FarmEvents />);
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(screen.queryByText(/gone/)).not.toBeInTheDocument();
+  });
+
+  it('history rows offer Edit and Delete controls', async () => {
+    await db.events.put({
+      id: 'e1', client_id: 'e1', event_type: 'expense', entity_type: 'farm', entity_id: null,
+      event_date: '2026-01-05', amount: 40, category: null, notes: null, metadata: {},
+      created_at: '2026-01-05T00:00:00.000Z', updated_at: '2026-01-05T00:00:00.000Z', synced: 0,
+    });
+
+    render(<FarmEvents />);
+
+    expect(await screen.findByRole('button', { name: /^edit$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
+  });
 });
