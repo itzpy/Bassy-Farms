@@ -5,6 +5,7 @@ import { db, type LocalEvent } from '../../lib/db';
 import { deletePlot } from './api';
 import { PlotForm } from './PlotForm';
 import { EventForm } from '../events/EventForm';
+import { EventHistoryList } from '../events/EventHistoryList';
 
 // See AnimalDetail.tsx for why this sentinel is needed: `useLiveQuery` returns
 // `undefined` both while pending and once genuinely resolved to "no such row."
@@ -35,7 +36,7 @@ export function PlotDetail() {
         ? db.events
             .where('entity_id')
             .equals(id)
-            .and((e) => e.entity_type === 'plot')
+            .and((e) => e.entity_type === 'plot' && !e.deleted_at)
             .reverse()
             .sortBy('event_date')
         : [],
@@ -79,19 +80,12 @@ export function PlotDetail() {
       )}
 
       <h2>History</h2>
-      <ul>
-        {(events ?? []).map((event) => {
-          const detail = formatInputDetail(event);
-          return (
-            <li key={event.id}>
-              {event.event_date} — {event.event_type}
-              {detail ? ` — ${detail}` : ''}
-              {event.amount != null ? ` — ${event.amount.toFixed(2)}` : ''}
-              {event.notes ? ` — ${event.notes}` : ''}
-            </li>
-          );
-        })}
-      </ul>
+      <EventHistoryList
+        events={events ?? []}
+        entityType="plot"
+        entityId={plot.id}
+        formatDetail={formatInputDetail}
+      />
     </div>
   );
 }
