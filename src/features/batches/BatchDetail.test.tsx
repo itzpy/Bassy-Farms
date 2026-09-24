@@ -140,4 +140,39 @@ describe('BatchDetail', () => {
     expect(screen.queryByRole('button', { name: /delete batch/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /log event/i })).not.toBeInTheDocument();
   });
+
+  it('a deleted event does not appear in the history list or in the headcount/profit totals', async () => {
+    await db.batches.put({
+      id: 'b20', name: 'History Batch', purchase_date: '2026-01-01', initial_count: 10, purchase_cost: 500, notes: null,
+      created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+    });
+    await db.events.put({
+      id: 'e1', client_id: 'e1', event_type: 'sale', entity_type: 'batch', entity_id: 'b20',
+      event_date: '2026-01-05', amount: 600, category: null, notes: null, metadata: { quantity: 3 },
+      created_at: '2026-01-05T00:00:00.000Z', updated_at: '2026-01-05T00:00:00.000Z', synced: 0,
+      deleted_at: '2026-01-06T00:00:00.000Z',
+    });
+
+    renderAt('b20');
+
+    expect(await screen.findByText(/Current headcount: 10/)).toBeInTheDocument();
+    expect(screen.queryByText(/3 pigs/)).not.toBeInTheDocument();
+  });
+
+  it('history rows offer Edit and Delete controls', async () => {
+    await db.batches.put({
+      id: 'b21', name: 'Controls Batch', purchase_date: '2026-01-01', initial_count: 10, purchase_cost: 500, notes: null,
+      created_at: '2026-01-01T00:00:00.000Z', updated_at: '2026-01-01T00:00:00.000Z', synced: 0,
+    });
+    await db.events.put({
+      id: 'e1', client_id: 'e1', event_type: 'expense', entity_type: 'batch', entity_id: 'b21',
+      event_date: '2026-01-05', amount: 20, category: null, notes: null, metadata: {},
+      created_at: '2026-01-05T00:00:00.000Z', updated_at: '2026-01-05T00:00:00.000Z', synced: 0,
+    });
+
+    renderAt('b21');
+
+    expect(await screen.findByRole('button', { name: /^edit$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^delete$/i })).toBeInTheDocument();
+  });
 });

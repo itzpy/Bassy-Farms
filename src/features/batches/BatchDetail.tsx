@@ -5,6 +5,7 @@ import { db, type LocalEvent } from '../../lib/db';
 import { deleteBatch } from './api';
 import { BatchForm } from './BatchForm';
 import { EventForm } from '../events/EventForm';
+import { EventHistoryList } from '../events/EventHistoryList';
 
 // See AnimalDetail.tsx for why this sentinel is needed: `useLiveQuery` returns
 // `undefined` both while pending and once genuinely resolved to "no such row."
@@ -40,7 +41,7 @@ export function BatchDetail() {
         ? db.events
             .where('entity_id')
             .equals(id)
-            .and((e) => e.entity_type === 'batch')
+            .and((e) => e.entity_type === 'batch' && !e.deleted_at)
             .reverse()
             .sortBy('event_date')
         : [],
@@ -97,19 +98,12 @@ export function BatchDetail() {
       )}
 
       <h2>History</h2>
-      <ul>
-        {(events ?? []).map((event) => {
-          const detail = formatBatchDetail(event);
-          return (
-            <li key={event.id}>
-              {event.event_date} — {event.event_type}
-              {detail ? ` — ${detail}` : ''}
-              {event.amount != null ? ` — ${event.amount.toFixed(2)}` : ''}
-              {event.notes ? ` — ${event.notes}` : ''}
-            </li>
-          );
-        })}
-      </ul>
+      <EventHistoryList
+        events={events ?? []}
+        entityType="batch"
+        entityId={batch.id}
+        formatDetail={formatBatchDetail}
+      />
     </div>
   );
 }
