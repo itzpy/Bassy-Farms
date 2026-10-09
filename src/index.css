@@ -505,3 +505,139 @@ ul li a:hover {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+/* ---------- Dashboard ---------- */
+.segmented {
+  display: flex;
+  gap: 4px;
+  margin-bottom: var(--space-2);
+}
+
+.segmented button {
+  flex: 1;
+  padding-inline: 4px;
+  font-size: 0.875rem;
+}
+
+.segmented button[aria-pressed='true'] {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  box-shadow: none;
+}
+
+.range-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+}
+
+.stat {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-2);
+}
+
+.stat-primary {
+  grid-column: 1 / -1;
+}
+
+.stat dt {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+}
+
+.stat dd {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-primary dd {
+  font-size: 2.25rem;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.profit[data-sign='loss'] {
+  color: var(--color-destructive);
+}
+
+.profit-tag {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.empty-state,
+.dashboard-loading {
+  color: var(--color-muted-foreground);
+  padding: var(--space-3) var(--space-2);
+  text-align: center;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+
+.data-table caption {
+  caption-side: top;
+  text-align: left;
+  padding-bottom: var(--space-1);
+  font-size: 0.875rem;
+  color: var(--color-muted-foreground);
+}
+
+.data-table th,
+.data-table td {
+  padding: 12px var(--space-1);
+  text-align: left;
+  border-top: 1px solid var(--color-border);
+}
+
+.data-table thead th {
+  border-top: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+  background-color: var(--color-muted);
+}
+
+.data-table tbody th,
+.data-table tfoot th {
+  font-weight: 600;
+}
+
+.data-table tfoot th,
+.data-table tfoot td {
+  font-weight: 700;
+  background-color: var(--color-muted);
+}
+
+.data-table .num {
+  text-align: right;
+}
+
+@media (max-width: 380px) {
+  .data-table th,
+  .data-table td {
+    padding-inline: 4px;
+    font-size: 0.875rem;
+  }
+}

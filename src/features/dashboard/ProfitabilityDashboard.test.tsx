@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { db } from '../../lib/db';
+import { toLocalDateString } from '../../lib/dates';
 import { ProfitabilityDashboard } from './ProfitabilityDashboard';
 
 describe('ProfitabilityDashboard', () => {
@@ -11,7 +12,7 @@ describe('ProfitabilityDashboard', () => {
   });
 
   it('shows totals for a mixed fixture within the default (this-month) range', async () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = toLocalDateString(new Date());
 
     await db.animals.put({
       id: 'a1', type: 'pig', tag: 'P-01', birth_date: null, status: 'active', notes: null,
@@ -25,8 +26,14 @@ describe('ProfitabilityDashboard', () => {
 
     render(<ProfitabilityDashboard />);
 
-    expect(await screen.findByText(/Cost: 30\.00/)).toBeInTheDocument();
-    expect(screen.getByText(/Profit: -30\.00/)).toBeInTheDocument();
+    expect(await screen.findByText('GH₵30.00', { selector: 'dd' })).toBeInTheDocument();
+    // A loss is signed with a true minus and labelled in words, not colour alone.
+    expect(screen.getByText('Loss', { selector: 'dt' })).toBeInTheDocument();
+    expect(screen.getAllByText(/\u2212GH₵30\.00/).length).toBeGreaterThan(0);
+    // Pigs row and the Overall row both show the cost.
+    expect(screen.getAllByRole('cell', { name: 'GH₵30.00' })).toHaveLength(2);
+    expect(screen.getByRole('rowheader', { name: 'Pigs' })).toBeInTheDocument();
+    expect(screen.getByRole('rowheader', { name: 'Overall' })).toBeInTheDocument();
   });
 
   it('updates totals when the date range is changed to exclude an event', async () => {
@@ -44,15 +51,15 @@ describe('ProfitabilityDashboard', () => {
     fireEvent.change(screen.getByLabelText(/from/i), { target: { value: '2026-02-01' } });
     fireEvent.change(screen.getByLabelText(/to/i), { target: { value: '2026-02-28' } });
 
-    expect(await screen.findByText(/Cost: 50\.00/)).toBeInTheDocument();
+    expect(await screen.findByText('GH₵50.00', { selector: 'dd' })).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText(/to/i), { target: { value: '2026-02-14' } });
 
-    expect(await screen.findByText(/Cost: 0\.00/)).toBeInTheDocument();
+    expect(await screen.findByText(/No income or costs logged/)).toBeInTheDocument();
   });
 
   it('excludes a deleted event from totals', async () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = toLocalDateString(new Date());
 
     await db.events.put({
       id: 'e1', client_id: 'e1', event_type: 'expense', entity_type: 'farm', entity_id: null,
@@ -63,6 +70,28 @@ describe('ProfitabilityDashboard', () => {
 
     render(<ProfitabilityDashboard />);
 
-    expect(await screen.findByText(/Cost: 0\.00/)).toBeInTheDocument();
+    expect(await screen.findByText(/No income or costs logged/)).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+
+  it('warns and shows no figures when the end date precedes the start date', async () => {
+    render(<ProfitabilityDashboard />);
+
+    fireEvent.change(screen.getByLabelText(/from/i), { target: { value: '2026-03-10' } });
+    fireEvent.change(screen.getByLabelText(/to/i), { target: { value: '2026-03-01' } });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/end date on or after the start date/i);
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+
+  it('applies the Last month preset and marks it pressed', async () => {
+    render(<ProfitabilityDashboard />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Last month' }));
+
+    expect(screen.getByRole('button', { name: 'Last month' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'This month' })).toHaveAttribute('aria-pressed', 'false');
+    const from = (screen.getByLabelText(/from/i) as HTMLInputElement).value;
+    expect(from.endsWith('-01')).toBe(true);
   });
 });
