@@ -68,8 +68,8 @@ export function AnimalDetail() {
       ) : (
         <>
           <p>Status: {animal.status}</p>
-          <button type="button" onClick={() => setIsEditing(true)}>Edit animal</button>{' '}
-          <button type="button" onClick={handleDelete}>Delete animal</button>
+          <button type="button" className="btn-secondary" onClick={() => setIsEditing(true)}>Edit animal</button>{' '}
+          <button type="button" className="btn-destructive" onClick={handleDelete}>Delete animal</button>
 
           {animal.type === 'pig' && (
             <p>

@@ -73,7 +73,7 @@ export function PlotForm({
 
       <button type="submit" disabled={isSubmitting}>{editing ? 'Save changes' : 'Add plot'}</button>
       {editing && (
-        <button type="button" onClick={() => onSaved?.()}>
+        <button type="button" className="btn-secondary" onClick={() => onSaved?.()}>
           Cancel
         </button>
       )}

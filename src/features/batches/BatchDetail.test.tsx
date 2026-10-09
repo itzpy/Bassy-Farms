@@ -80,9 +80,9 @@ describe('BatchDetail', () => {
     // 10 initial - 3 sold - 1 died = 6
     expect(await screen.findByText(/current headcount: 6/i)).toBeInTheDocument();
     // total cost = 500 purchase + 100 expense = 600; revenue = 300; profit = -300
-    expect(screen.getByText(/total cost: 600/i)).toBeInTheDocument();
-    expect(screen.getByText(/total revenue: 300/i)).toBeInTheDocument();
-    expect(screen.getByText(/profit: -300/i)).toBeInTheDocument();
+    expect(screen.getByText(/total cost: GH₵600\.00/i)).toBeInTheDocument();
+    expect(screen.getByText(/total revenue: GH₵300\.00/i)).toBeInTheDocument();
+    expect(screen.getByText(/profit: \u2212GH₵300\.00/i)).toBeInTheDocument();
     expect(screen.getByText(/3 pigs/)).toBeInTheDocument();
   });
 

@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type LocalEvent } from '../../lib/db';
+import { formatMoney, formatSignedMoney } from '../../lib/money';
 import { deleteBatch } from './api';
 import { BatchForm } from './BatchForm';
 import { EventForm } from '../events/EventForm';
@@ -86,11 +87,11 @@ export function BatchDetail() {
         <>
           <p>Purchased: {batch.purchase_date} — {batch.initial_count} pigs</p>
           <p>Current headcount: {currentCount}</p>
-          <p>Total cost: {totalCost.toFixed(2)}</p>
-          <p>Total revenue: {totalRevenue.toFixed(2)}</p>
-          <p>Profit: {profit.toFixed(2)}</p>
-          <button type="button" onClick={() => setIsEditing(true)}>Edit batch</button>{' '}
-          <button type="button" onClick={handleDelete}>Delete batch</button>
+          <p>Total cost: {formatMoney(totalCost)}</p>
+          <p>Total revenue: {formatMoney(totalRevenue)}</p>
+          <p>Profit: {formatSignedMoney(profit)}</p>
+          <button type="button" className="btn-secondary" onClick={() => setIsEditing(true)}>Edit batch</button>{' '}
+          <button type="button" className="btn-destructive" onClick={handleDelete}>Delete batch</button>
 
           <h2>Log an event</h2>
           <EventForm entityType="batch" entityId={batch.id} />

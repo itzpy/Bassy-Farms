@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { AnimalType, EntityType, PigStage } from '../../lib/types';
 import type { LocalEvent } from '../../lib/db';
+import { formatMoney } from '../../lib/money';
 import { deleteEvent } from './api';
 import { EventForm } from './EventForm';
 
@@ -50,10 +51,10 @@ export function EventHistoryList({
           <li key={event.id}>
             {event.event_date} — {event.event_type}
             {detail ? ` — ${detail}` : ''}
-            {event.amount != null ? ` — ${event.amount.toFixed(2)}` : ''}
+            {event.amount != null ? ` — ${formatMoney(event.amount)}` : ''}
             {event.notes ? ` — ${event.notes}` : ''}{' '}
-            <button type="button" onClick={() => setEditingId(event.id)}>Edit</button>{' '}
-            <button type="button" onClick={() => void handleDelete(event)}>Delete</button>
+            <button type="button" className="btn-secondary" onClick={() => setEditingId(event.id)}>Edit</button>{' '}
+            <button type="button" className="btn-destructive" onClick={() => void handleDelete(event)}>Delete</button>
           </li>
         );
       })}
