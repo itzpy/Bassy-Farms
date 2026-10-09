@@ -52,8 +52,8 @@ export function EventHistoryList({
             {detail ? ` — ${detail}` : ''}
             {event.amount != null ? ` — ${event.amount.toFixed(2)}` : ''}
             {event.notes ? ` — ${event.notes}` : ''}{' '}
-            <button type="button" onClick={() => setEditingId(event.id)}>Edit</button>{' '}
-            <button type="button" onClick={() => void handleDelete(event)}>Delete</button>
+            <button type="button" className="btn-secondary" onClick={() => setEditingId(event.id)}>Edit</button>{' '}
+            <button type="button" className="btn-destructive" onClick={() => void handleDelete(event)}>Delete</button>
           </li>
         );
       })}

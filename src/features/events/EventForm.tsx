@@ -311,7 +311,7 @@ export function EventForm({
 
       <button type="submit" disabled={isSubmitting}>{editingEvent ? 'Save changes' : 'Log event'}</button>
       {editingEvent && (
-        <button type="button" onClick={() => onCancel?.()}>
+        <button type="button" className="btn-secondary" onClick={() => onCancel?.()}>
           Cancel
         </button>
       )}

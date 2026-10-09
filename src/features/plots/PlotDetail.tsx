@@ -71,8 +71,8 @@ export function PlotDetail() {
               .filter(Boolean)
               .join(' — ')}
           </p>
-          <button type="button" onClick={() => setIsEditing(true)}>Edit plot</button>{' '}
-          <button type="button" onClick={handleDelete}>Delete plot</button>
+          <button type="button" className="btn-secondary" onClick={() => setIsEditing(true)}>Edit plot</button>{' '}
+          <button type="button" className="btn-destructive" onClick={handleDelete}>Delete plot</button>
 
           <h2>Log an event</h2>
           <EventForm entityType="plot" entityId={plot.id} />

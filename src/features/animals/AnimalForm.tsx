@@ -47,7 +47,7 @@ export function AnimalForm({
 
       <button type="submit" disabled={isSubmitting}>{editing ? 'Save changes' : 'Add animal'}</button>
       {editing && (
-        <button type="button" onClick={() => onSaved?.()}>
+        <button type="button" className="btn-secondary" onClick={() => onSaved?.()}>
           Cancel
         </button>
       )}

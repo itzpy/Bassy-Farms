@@ -89,8 +89,8 @@ export function BatchDetail() {
           <p>Total cost: {totalCost.toFixed(2)}</p>
           <p>Total revenue: {totalRevenue.toFixed(2)}</p>
           <p>Profit: {profit.toFixed(2)}</p>
-          <button type="button" onClick={() => setIsEditing(true)}>Edit batch</button>{' '}
-          <button type="button" onClick={handleDelete}>Delete batch</button>
+          <button type="button" className="btn-secondary" onClick={() => setIsEditing(true)}>Edit batch</button>{' '}
+          <button type="button" className="btn-destructive" onClick={handleDelete}>Delete batch</button>
 
           <h2>Log an event</h2>
           <EventForm entityType="batch" entityId={batch.id} />

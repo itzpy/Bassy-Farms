@@ -91,7 +91,7 @@ export function BatchForm({
 
       <button type="submit" disabled={isSubmitting}>{editing ? 'Save changes' : 'Add batch'}</button>
       {editing && (
-        <button type="button" onClick={() => onSaved?.()}>
+        <button type="button" className="btn-secondary" onClick={() => onSaved?.()}>
           Cancel
         </button>
       )}
